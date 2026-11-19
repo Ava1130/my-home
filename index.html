@@ -1,7 +1,8 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MY HOME · 家居实验室</title><style>
 *{box-sizing:border-box}body{margin:0;background:#f5f5f7;color:#191919;font:14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}header{height:60px;background:white;border-bottom:1px solid #e5e5e5;display:flex;align-items:center;justify-content:space-between;padding:0 24px}header strong{font-size:18px}.tag{font-size:12px;color:#666;background:#f4f4f4;padding:7px 10px;border-radius:20px}.layout{height:calc(100vh - 60px);display:grid;grid-template-columns:260px minmax(0,1fr)}aside{padding:22px;background:#fff;border-right:1px solid #e7e7e7;overflow:auto}h3{margin:4px 0 15px;font-size:15px}label{display:block;color:#666;font-size:12px;margin:13px 0 6px}input,select,button{font:inherit;border-radius:9px;border:1px solid #dedede;padding:10px;background:#fff;max-width:100%}input,select{width:100%}button{cursor:pointer}button:hover{background:#f6f6f6}.primary{background:#e60012;color:white;border-color:#e60012}.primary:hover{background:#c90011}.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}.stage{min-width:0;display:flex;flex-direction:column}.bar{padding:12px 20px;display:flex;gap:8px;background:white;border-bottom:1px solid #eaeaea;align-items:center;flex-wrap:wrap}.bar button.active{background:#171717;color:white}.view{position:relative;flex:1;min-height:0;overflow:hidden;display:flex;justify-content:center;align-items:center}.plan{width:min(95%,1050px);height:min(94%,800px);touch-action:none}.plan svg{width:100%;height:100%;overflow:visible}.room{fill:#eee9de;stroke:#262626;stroke-width:9;cursor:pointer}.room:hover{fill:#e5e0d5}.room.active{fill:#f4f0e9}.roomname{font-size:21px;fill:#333;pointer-events:none;text-anchor:middle}.area{font-size:15px;fill:#777;pointer-events:none;text-anchor:middle}.furniture{cursor:grab;touch-action:none}.furniture rect{stroke:#777;stroke-width:1.5}.furniture.selected rect{stroke:#e60012;stroke-width:4}.furniture text{pointer-events:none;font-size:12px;fill:#222}#three{position:absolute;inset:0;display:none}#three canvas{display:block}.sep{border:0;border-top:1px solid #eee;margin:20px 0}.hint{font-size:12px;color:#888;line-height:1.7}.dim{font-size:12px;color:#777}.hidden{display:none!important}@media(max-width:700px){.layout{grid-template-columns:180px minmax(0,1fr)}aside{padding:12px}.bar{padding:8px}.bar button{padding:7px}}
 .stage{background:#f6f3ed}.plan{width:min(100%,1120px);height:100%;padding:14px}.room{stroke:none;fill:#eee5d4}.room[data-room="bath"],.room[data-room="kitchen"],.room[data-room="balcony"]{fill:#e3ebea}.room[data-room="living"],.room[data-room="dining"],.room[data-room="hall"]{fill:#f5ecd9}.room:hover{fill:#e6dac5}.room.active{cursor:default}.roomname{font-weight:600;font-size:22px}.area{font-size:17px}.wall-segment{stroke:#302f2b;stroke-width:13;stroke-linecap:square;pointer-events:none}.opening-line{stroke:#387389;stroke-width:3;fill:none;pointer-events:none}.slider-track{stroke:#4b504c;stroke-width:1.5;stroke-dasharray:6 3}.slider-panel{stroke:#81734f;stroke-width:6}.slider-panel.glass{stroke:#75acc2;stroke-width:6}.passage-line{stroke:#806f50;stroke-width:2;stroke-dasharray:8 6;pointer-events:none}.door-leaf{stroke:#806f50;stroke-width:2.5;fill:none;pointer-events:none}.fixed-part{fill:#786443;stroke:#514126;stroke-width:1.5}.fixed-part.desk{fill:#aa8c5b}.fixed-label{fill:#fff;font-size:13px;pointer-events:none;text-anchor:middle;paint-order:stroke;stroke:#514126;stroke-width:2}.legend{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;padding:12px 20px;background:#fff;border-top:1px solid #e7e7e7;font-size:12px}.legend span:before{content:"";display:inline-block;width:12px;height:9px;margin-right:6px}.wall-key:before{background:#302f2b}.opening-key:before{border-bottom:2px dashed #806f50}.window-key:before{background:#387389}.slider-key:before{border-block:1px dashed #4b504c;background:#a4c3c9}.fixed-key:before{background:#786443}.move-key:before{background:#c9b6a4}.legend small{color:#666;font-size:12px}.hint ul{padding-left:18px}.hint strong{color:#403529}button:disabled{opacity:.45;cursor:default}@media(max-width:700px){header{padding:0 12px}.layout{height:auto;display:flex;flex-direction:column}.stage{order:-1}.view{height:clamp(290px,65vw,510px);flex:none}aside{border-right:0;border-top:1px solid #e7e7e7}.legend{padding:8px 10px;gap:6px 12px}}
-</style></head><body><header><strong>MY HOME <span style="color:#999;font-weight:400">· 家居实验室</span></strong><span class="tag">户型校对预览</span></header><div class="layout"><aside><h3>空间</h3><label>查看范围</label><select id="room" aria-label="查看范围"></select><div id="roomdims" class="hint"></div><hr class="sep"><h3>家具</h3><button class="primary" id="add" style="width:100%">＋ 添加家具</button><div id="editor"><label>选择家具</label><select id="items"></select><label>名称</label><input id="name"><div class="row"><div><label>宽 cm</label><input id="fw" type="number"></div><div><label>深 cm</label><input id="fd" type="number"></div><div><label>高 cm</label><input id="fh" type="number"></div></div><label>颜色</label><input id="color" type="color"><div class="row" style="margin-top:10px"><button id="rotate">旋转 90°</button><button id="remove">删除</button></div></div><hr class="sep"><button id="reset">恢复当前空间</button><p class="hint">活动家具尺寸单位为厘米，可在 2D 拖动。家具布局保存在当前浏览器。</p></aside><main class="stage"><div class="bar"><span style="font-weight:600;margin-right:8px">视图</span><button id="b2" class="active">2D 平面</button><button id="b3">3D 示意</button><button id="homeview">重置视角</button><button id="walls" title="仅影响 3D 展示，不修改房屋数据">显示完整墙高</button><button id="save">保存</button><span id="status" class="dim"></span></div><div class="view"><div class="plan" id="plan"></div><div id="three"></div></div><footer class="legend" id="legend"><span class="wall-key">墙体</span><span class="opening-key">门与通道</span><span class="window-key">窗</span><span class="slider-key">推拉门 · 蓝色为玻璃</span><span class="fixed-key">定制柜 · 固定</span><span class="move-key">活动家具</span><small>推拉门为示意，门扇数量、方向及尺寸待确认</small></footer></main></div>
+#walls{width:auto;max-width:100%}
+</style></head><body><header><strong>MY HOME <span style="color:#999;font-weight:400">· 家居实验室</span></strong><span class="tag">户型校对预览</span></header><div class="layout"><aside><h3>空间</h3><label>查看范围</label><select id="room" aria-label="查看范围"></select><div id="roomdims" class="hint"></div><hr class="sep"><h3>家具</h3><button class="primary" id="add" style="width:100%">＋ 添加家具</button><div id="editor"><label>选择家具</label><select id="items"></select><label>名称</label><input id="name"><div class="row"><div><label>宽 cm</label><input id="fw" type="number"></div><div><label>深 cm</label><input id="fd" type="number"></div><div><label>高 cm</label><input id="fh" type="number"></div></div><label>颜色</label><input id="color" type="color"><div class="row" style="margin-top:10px"><button id="rotate">旋转 90°</button><button id="remove">删除</button></div></div><hr class="sep"><button id="reset">恢复当前空间</button><p class="hint">活动家具尺寸单位为厘米，可在 2D 拖动。家具布局保存在当前浏览器。</p></aside><main class="stage"><div class="bar"><span style="font-weight:600;margin-right:8px">视图</span><button id="b2" class="active">2D 平面</button><button id="b3">3D 示意</button><button id="homeview">重置视角</button><select id="walls" hidden aria-label="3D 墙体显示"><option value="auto">自动剖切</option><option value="full">完整墙体</option><option value="low">低墙剖切</option></select><button id="save">保存</button><span id="status" class="dim"></span></div><div class="view"><div class="plan" id="plan"></div><div id="three"></div></div><footer class="legend" id="legend"><span class="wall-key">墙体</span><span class="opening-key">门与通道</span><span class="window-key">窗</span><span class="slider-key">推拉门 · 蓝色为玻璃</span><span class="fixed-key">定制柜 · 固定</span><span class="move-key">活动家具</span><small>推拉门为示意，门扇数量、方向及尺寸待确认</small></footer></main></div>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -243,8 +244,9 @@ function setMode(next) {
   $('three').style.display = next === '3' ? 'block' : 'none';
   $('b2').classList.toggle('active', next === '2');
   $('b3').classList.toggle('active', next === '3');
+  $('walls').hidden = next !== '3';
   $('legend').querySelector('small').textContent = next === '3'
-    ? '3D 示意 · 低墙剖切 · 推拉门以连续带示意，门扇数量、方向及尺寸待确认' : '推拉门为示意，门扇数量、方向及尺寸待确认';
+    ? '3D 示意 · 墙高、墙厚和开口细部暂定 · 推拉门扇数量与方向待确认' : '推拉门为示意，门扇数量、方向及尺寸待确认';
   sync();
 }
 
@@ -264,18 +266,20 @@ async function initialize3d() {
   camera = new THREE.PerspectiveCamera(45,1,.05,200);
   controls = new OrbitControls(camera,renderer.domElement);
   controls.enableDamping = true;
-  scene.add(new THREE.HemisphereLight(0xffffff,0xaaaaaa,2));
-  const light = new THREE.DirectionalLight(0xffffff,1.6);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x9e9183,1.55));
+  const light = new THREE.DirectionalLight(0xfff3e3,2.05);
   light.position.set(4,9,5);
   scene.add(light);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.3;
+  renderer.toneMappingExposure = 1.1;
   controls.minDistance = 1;
-  controls.maxDistance = 35;
+  controls.maxDistance = 70;
+  controls.maxPolarAngle = Math.PI * .49;
   renderer.setAnimationLoop(() => {
     if (mode === '3') {
       controls.update();
+      updateWallVisibility();
       renderer.render(scene,camera);
     }
   });
@@ -290,12 +294,36 @@ function size3d() {
   camera.updateProjectionMatrix();
 }
 
-let fullHeightWalls = false;
-$('walls').onclick = () => { fullHeightWalls = !fullHeightWalls; $('walls').textContent = fullHeightWalls ? '切换剖切墙' : '显示完整墙高'; if(mode === '3') build3(); };
+// Display assumptions in centimetres. The 2D footprints and measured notes
+// remain in plan; no value here represents a new measurement of the home.
+const previewGeometry = {
+  wallHeight:260, wallThickness:13, cutHeight:35, doorTop:210,
+  windowSill:88, windowTop:210, frameWidth:4, deskHeight:76
+};
+let wallLayers = [];
+$('walls').onchange = updateWallVisibility;
+
+function updateWallVisibility() {
+  if (!camera) return;
+  const mode = $('walls').value;
+  for (const {axis,side,plane,upper,lower} of wallLayers) {
+    const coordinate = axis === 'h' ? camera.position.z : camera.position.x;
+    const cut = mode === 'low' || (mode === 'auto' && side !== 0 && (coordinate-plane)*side > 0);
+    upper.visible = !cut;
+    lower.visible = cut;
+  }
+}
+
 function frame3d() {
-  const [, , w,h] = viewBox(), extent = Math.max(w,h)/100;
-  camera.position.set(extent*.75,extent*1.25,extent*.95);
-  controls.target.set(0,0,0);
+  const [, , w,h] = viewBox();
+  const targetHeight = .6;
+  const radius = Math.hypot(w/200, h/200, previewGeometry.wallHeight/100-targetHeight);
+  const vertical = three.MathUtils.degToRad(camera.fov/2);
+  const halfAngle = Math.min(vertical, Math.atan(Math.tan(vertical)*camera.aspect));
+  const distance = radius / Math.sin(halfAngle) * 1.06;
+  controls.target.set(0,targetHeight,0);
+  controls.maxDistance = Math.max(70, distance*2);
+  camera.position.set(.82,1.02,1).normalize().multiplyScalar(distance).add(controls.target);
   controls.update();
   frameKey = current;
 }
@@ -307,19 +335,22 @@ async function build3() {
     if (mode !== '3') return;
     if (model) {
       scene.remove(model);
-      for (const mesh of model.children) {
-        mesh.geometry.dispose();
-        mesh.material.dispose();
-      }
+      model.traverse(node => {
+        if (!node.isMesh) return;
+        node.geometry.dispose();
+        node.material.dispose();
+      });
     }
+    wallLayers = [];
     model = new three.Group();
     scene.add(model);
     const [ox,oy,w,h] = viewBox();
-    function box(x,y,width,depth,height,color,base=0,opacity=1) {
+    function box(x,y,width,depth,height,color,base=0,opacity=1,parent=model) {
+      if (width <= 0 || depth <= 0 || height <= 0) return;
       const mesh = new three.Mesh(new three.BoxGeometry(width/100,height/100,depth/100),
         new three.MeshStandardMaterial({color,opacity,transparent:opacity < 1,roughness:.78}));
       mesh.position.set((x+width/2-ox-w/2)/100,(base+height/2)/100,(y+depth/2-oy-h/2)/100);
-      model.add(mesh);
+      parent.add(mesh);
     }
     for (const key of roomKeys()) {
       const [x,y,width,depth] = plan.rooms[key].box;
@@ -327,31 +358,96 @@ async function build3() {
       for (const f of furniture(key)) box(x+f.x,y+f.y,f.w,f.d,f.h,f.c);
       for (const asset of plan.fixed.filter(a => a.room === key)) {
         for (const {box:[px,py,pw,pd],height,desk} of asset.parts) {
-          box(x+px,y+py,pw,pd,height,desk ? '#aa8c5b' : '#786443');
+          const cx = x+px, cy = y+py;
+          if (!desk) {
+            box(cx,cy,pw,pd,height-6,'#a18a68',6);
+            box(cx+1,cy+1,pw-2,pd-2,6,'#70624d');
+            continue;
+          }
+          const top = Math.min(previewGeometry.deskHeight,height);
+          box(cx,cy,pw,pd,4,'#956a45',top-4);
+          // The transverse side panels stay within the accepted desktop footprint.
+          const endAlongX = asset.id !== 'bed-desk';
+          if (endAlongX) {
+            box(cx,cy,3,pd,top-4,'#857158');
+            box(cx+pw-3,cy,3,pd,top-4,'#857158');
+          } else {
+            box(cx,cy,pw,3,top-4,'#857158');
+            box(cx,cy+pd-3,pw,3,top-4,'#857158');
+          }
+          if (height > top) {
+            const upperHeight = Math.min(48,height-top);
+            box(cx,cy,2,pd,height-upperHeight-top,'#857158',top);
+            box(cx,cy,Math.min(pw,26),pd,upperHeight,'#a18a68',height-upperHeight);
+          }
         }
       }
     }
     for (const wall of visibleWalls()) {
-      for (const [a,b] of segments(wall)) {
-        if (wall.axis === 'h') box(a,wall.at-6.5,b-a,13,fullHeightWalls ? 260 : 35,'#e8e6e2');
-        else box(wall.at-6.5,a,13,b-a,fullHeightWalls ? 260 : 35,'#e8e6e2');
+      const horizontal = wall.axis === 'h';
+      const min = horizontal ? ox : oy;
+      const max = min + (horizontal ? w : h);
+      const normalCenter = horizontal ? oy+h/2 : ox+w/2;
+      const sides = new Set(wall.rooms.filter(key => current === 'all' || key === current).map(key => {
+        const [x,y,width,depth] = plan.rooms[key].box;
+        const roomCenter = horizontal ? y+depth/2 : x+width/2;
+        return Math.sign(wall.at-roomCenter);
+      }));
+      const upper = new three.Group(), lower = new three.Group();
+      model.add(upper,lower);
+      wallLayers.push({axis:wall.axis,side:sides.size === 1 ? [...sides][0] : 0,
+        plane:(wall.at-normalCenter)/100,upper,lower});
+      const {wallHeight,wallThickness,cutHeight,doorTop,windowSill,windowTop,frameWidth} = previewGeometry;
+      function strip(group,a,b,base,top,thickness,color,offset=0,opacity=1) {
+        const from = Math.max(a,min), to = Math.min(b,max);
+        if (to <= from) return;
+        const [x,y] = point(wall,from,offset-thickness/2);
+        const [width,depth] = horizontal ? [to-from,thickness] : [thickness,to-from];
+        box(x,y,width,depth,top-base,color,base,opacity,group);
       }
-      for (const opening of wall.openings.filter(slidingType)) {
-        const glass = opening.type === 'sliding-glass-door';
-        // Cutaway markers, using display heights rather than door specifications.
-        const strip = (offset, thickness, height, color, opacity=1) => {
-          const [x,y] = point(wall,opening.from,offset-thickness/2);
-          const span = opening.to-opening.from;
-          const [width,depth] = wall.axis === 'h' ? [span,thickness] : [thickness,span];
-          box(x,y,width,depth,height,color,0,opacity);
-        };
-        strip(0,3,35,glass ? '#75acc2' : '#81734f',glass ? .55 : 1);
-        strip(-6,1.5,3,'#4b504c');
-        strip(6,1.5,3,'#4b504c');
+      function masonry(group,a,b,base,top) {
+        strip(group,a,b,base,top,wallThickness,'#e8e2d8');
+      }
+      for (const [a,b] of segments(wall)) {
+        masonry(upper,a,b,0,wallHeight);
+        masonry(lower,a,b,0,cutHeight);
+        strip(upper,a,b,0,6,wallThickness+1,'#c9bdab');
+      }
+      for (const opening of wall.openings) {
+        const {from,to,type} = opening;
+        const window = type === 'window';
+        const sliding = slidingType(opening);
+        const glass = window || type === 'sliding-glass-door';
+        const sill = window ? windowSill : 0;
+        const head = window ? windowTop : doorTop;
+        masonry(upper,from,to,0,sill);
+        masonry(upper,from,to,head,wallHeight);
+        if (window) masonry(lower,from,to,0,cutHeight);
+        if (type === 'passage') continue;
+
+        const frame = glass ? '#475e61' : '#766854';
+        strip(upper,from,from+frameWidth,sill,head,8,frame);
+        strip(upper,to-frameWidth,to,sill,head,8,frame);
+        strip(upper,from,to,head-frameWidth,head,8,frame);
+        if (window) strip(upper,from,to,sill,sill+frameWidth,12,frame);
+        // A continuous surface indicates an assembly, without inferring leaves.
+        if (glass || sliding) {
+          const panel = glass ? '#76adc0' : '#b2a18a';
+          strip(upper,from+frameWidth,to-frameWidth,sill+frameWidth,head-frameWidth,
+            2,panel,0,glass ? .42 : 1);
+          if (sliding) {
+            strip(lower,from,to,0,cutHeight,2,panel,0,glass ? .42 : 1);
+            for (const group of [upper,lower]) {
+              strip(group,from,to,0,3,1.5,frame,-5);
+              strip(group,from,to,0,3,1.5,frame,5);
+            }
+          }
+        }
       }
     }
     size3d();
     if (frameKey !== current) frame3d();
+    updateWallVisibility();
     $('status').textContent = '3D 示意已加载';
   } catch {
     loading3d = null;
