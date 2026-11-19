@@ -1,9 +1,9 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MY HOME · 家居实验室</title><style>
 *{box-sizing:border-box}body{margin:0;background:#f5f5f7;color:#191919;font:14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}header{height:60px;background:white;border-bottom:1px solid #e5e5e5;display:flex;align-items:center;justify-content:space-between;padding:0 24px}header strong{font-size:18px}.tag{font-size:12px;color:#666;background:#f4f4f4;padding:7px 10px;border-radius:20px}.layout{height:calc(100vh - 60px);display:grid;grid-template-columns:260px minmax(0,1fr)}aside{padding:22px;background:#fff;border-right:1px solid #e7e7e7;overflow:auto}h3{margin:4px 0 15px;font-size:15px}label{display:block;color:#666;font-size:12px;margin:13px 0 6px}input,select,button{font:inherit;border-radius:9px;border:1px solid #dedede;padding:10px;background:#fff;max-width:100%}input,select{width:100%}button{cursor:pointer}button:hover{background:#f6f6f6}.primary{background:#e60012;color:white;border-color:#e60012}.primary:hover{background:#c90011}.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}.stage{min-width:0;display:flex;flex-direction:column}.bar{padding:12px 20px;display:flex;gap:8px;background:white;border-bottom:1px solid #eaeaea;align-items:center;flex-wrap:wrap}.bar button.active{background:#171717;color:white}.view{position:relative;flex:1;min-height:0;overflow:hidden;display:flex;justify-content:center;align-items:center}.plan{width:min(95%,1050px);height:min(94%,800px);touch-action:none}.plan svg{width:100%;height:100%;overflow:visible}.room{fill:#eee9de;stroke:#262626;stroke-width:9;cursor:pointer}.room:hover{fill:#e5e0d5}.room.active{fill:#f4f0e9}.roomname{font-size:21px;fill:#333;pointer-events:none;text-anchor:middle}.area{font-size:15px;fill:#777;pointer-events:none;text-anchor:middle}.furniture{cursor:grab;touch-action:none}.furniture rect{stroke:#777;stroke-width:1.5}.furniture.selected rect{stroke:#e60012;stroke-width:4}.furniture text{pointer-events:none;font-size:12px;fill:#222}#three{position:absolute;inset:0;display:none}#three canvas{display:block}.sep{border:0;border-top:1px solid #eee;margin:20px 0}.hint{font-size:12px;color:#888;line-height:1.7}.dim{font-size:12px;color:#777}.hidden{display:none!important}@media(max-width:700px){.layout{grid-template-columns:180px minmax(0,1fr)}aside{padding:12px}.bar{padding:8px}.bar button{padding:7px}}
 .stage{background:#f6f3ed}.plan{width:min(100%,1120px);height:100%;padding:14px}.room{stroke:none;fill:#eee5d4}.room[data-room="bath"],.room[data-room="kitchen"],.room[data-room="balcony"]{fill:#e3ebea}.room[data-room="living"],.room[data-room="dining"],.room[data-room="hall"]{fill:#f5ecd9}.room:hover{fill:#e6dac5}.room.active{cursor:default}.roomname{font-weight:600;font-size:22px}.area{font-size:17px}.wall-segment{stroke:#302f2b;stroke-width:13;stroke-linecap:square;pointer-events:none}.opening-line{stroke:#387389;stroke-width:3;fill:none;pointer-events:none}.slider-track{stroke:#4b504c;stroke-width:1.5;stroke-dasharray:6 3}.slider-panel{stroke:#81734f;stroke-width:6}.slider-panel.glass{stroke:#75acc2;stroke-width:6}.passage-line{stroke:#806f50;stroke-width:2;stroke-dasharray:8 6;pointer-events:none}.door-leaf{stroke:#806f50;stroke-width:2.5;fill:none;pointer-events:none}.fixed-part{fill:#786443;stroke:#514126;stroke-width:1.5}.fixed-part.desk{fill:#aa8c5b}.fixed-label{fill:#fff;font-size:13px;pointer-events:none;text-anchor:middle;paint-order:stroke;stroke:#514126;stroke-width:2}.legend{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;padding:12px 20px;background:#fff;border-top:1px solid #e7e7e7;font-size:12px}.legend span:before{content:"";display:inline-block;width:12px;height:9px;margin-right:6px}.wall-key:before{background:#302f2b}.opening-key:before{border-bottom:2px dashed #806f50}.window-key:before{background:#387389}.slider-key:before{border-block:1px dashed #4b504c;background:#a4c3c9}.fixed-key:before{background:#786443}.move-key:before{background:#c9b6a4}.legend small{color:#666;font-size:12px}.hint ul{padding-left:18px}.hint strong{color:#403529}button:disabled{opacity:.45;cursor:default}@media(max-width:700px){header{padding:0 12px}.layout{height:auto;display:flex;flex-direction:column}.stage{order:-1}.view{height:clamp(290px,65vw,510px);flex:none}aside{border-right:0;border-top:1px solid #e7e7e7}.legend{padding:8px 10px;gap:6px 12px}}
-#walls{width:auto;max-width:100%}
+#walls,#kitchenslide{width:auto;max-width:100%}
 .fixed-part.photo-cabinet{fill:#5b4334}.fixed-label-vertical{writing-mode:vertical-rl;dominant-baseline:middle}
-</style></head><body><header><strong>MY HOME <span style="color:#999;font-weight:400">· 家居实验室</span></strong><span class="tag">户型校对预览</span></header><div class="layout"><aside><h3>空间</h3><label>查看范围</label><select id="room" aria-label="查看范围"></select><div id="roomdims" class="hint"></div><hr class="sep"><h3>家具</h3><button class="primary" id="add" style="width:100%">＋ 添加家具</button><div id="editor"><label>选择家具</label><select id="items"></select><label>名称</label><input id="name"><div class="row"><div><label>宽 cm</label><input id="fw" type="number"></div><div><label>深 cm</label><input id="fd" type="number"></div><div><label>高 cm</label><input id="fh" type="number"></div></div><label>颜色</label><input id="color" type="color"><div class="row" style="margin-top:10px"><button id="rotate">旋转 90°</button><button id="remove">删除</button></div></div><hr class="sep"><button id="reset">恢复当前空间</button><p class="hint">活动家具尺寸单位为厘米，可在 2D 拖动。家具布局保存在当前浏览器。</p></aside><main class="stage"><div class="bar"><span style="font-weight:600;margin-right:8px">视图</span><button id="b2" class="active">2D 平面</button><button id="b3">3D 示意</button><button id="homeview">重置视角</button><select id="walls" hidden aria-label="3D 墙体显示"><option value="auto">自动剖切</option><option value="full">完整墙体</option><option value="low">低墙剖切</option></select><button id="save">保存</button><span id="status" class="dim"></span></div><div class="view"><div class="plan" id="plan"></div><div id="three"></div></div><footer class="legend" id="legend"><span class="wall-key">墙体</span><span class="opening-key">门与通道</span><span class="window-key">窗</span><span class="slider-key">推拉门 · 蓝色为玻璃</span><span class="fixed-key">定制柜 · 固定</span><span class="move-key">活动家具</span><small>推拉门为示意，门扇数量、方向及尺寸待确认</small></footer></main></div>
+</style></head><body><header><strong>MY HOME <span style="color:#999;font-weight:400">· 家居实验室</span></strong><span class="tag">户型校对预览</span></header><div class="layout"><aside><h3>空间</h3><label>查看范围</label><select id="room" aria-label="查看范围"></select><div id="roomdims" class="hint"></div><hr class="sep"><h3>家具</h3><button class="primary" id="add" style="width:100%">＋ 添加家具</button><div id="editor"><label>选择家具</label><select id="items"></select><label>名称</label><input id="name"><div class="row"><div><label>宽 cm</label><input id="fw" type="number"></div><div><label>深 cm</label><input id="fd" type="number"></div><div><label>高 cm</label><input id="fh" type="number"></div></div><label>颜色</label><input id="color" type="color"><div class="row" style="margin-top:10px"><button id="rotate">旋转 90°</button><button id="remove">删除</button></div></div><hr class="sep"><button id="reset">恢复当前空间</button><p class="hint">活动家具尺寸单位为厘米，可在 2D 拖动。家具布局保存在当前浏览器。</p></aside><main class="stage"><div class="bar"><span style="font-weight:600;margin-right:8px">视图</span><button id="b2" class="active">2D 平面</button><button id="b3">3D 示意</button><button id="homeview">重置视角</button><select id="walls" hidden aria-label="3D 墙体显示"><option value="auto">自动剖切</option><option value="full">完整墙体</option><option value="low">低墙剖切</option></select><button id="kitchenfront" hidden>厨房门正视</button><select id="kitchenslide" hidden aria-label="厨房门滑动示意"><option value="0">向左 · 实拍状态</option><option value="0.5">居中 · 示意</option><option value="1">向右 · 示意</option></select><button id="save">保存</button><span id="status" class="dim"></span></div><div class="view"><div class="plan" id="plan"></div><div id="three"></div></div><footer class="legend" id="legend"><span class="wall-key">墙体</span><span class="opening-key">门与通道</span><span class="window-key">窗</span><span class="slider-key">推拉门 · 蓝色为玻璃</span><span class="fixed-key">定制柜 · 固定</span><span class="move-key">活动家具</span><small>推拉门为示意，门扇数量、方向及尺寸待确认</small></footer></main></div>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -77,7 +77,9 @@ wall('h',290,920,1230,['master','kitchen']);
 wall('v',410,290,440,['bath'],[opening('window',339,390)]);
 wall('v',700,290,440,['bath','hall'],[opening('door',290,371,-1)]);
 wall('v',920,290,440,['hall','kitchen'],[
-  {...opening('sliding-glass-door',290,371), id:'kitchen-glass-slider', showInCutaway:true}
+  {type:'sliding-glass-door', from:290, to:371, id:'kitchen-glass-slider',
+    // Opening width/position retained; height and one leaf's travel are preview assumptions.
+    floorSlider:{sill:0, head:240, jamb:2, rail:1.5, frame:1.8, leafFraction:.55, trackOffset:5}}
 ]);
 wall('v',1230,290,440,['kitchen'],[opening('window',302,396)]);
 wall('h',440,0,410,['studio'],[opening('window',117,281)]);
@@ -141,6 +143,14 @@ function line(w, a, b, css, offset = 0) {
   return `<line class="${css}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
 }
 
+let kitchenSlide = 0;
+function floorSliderLayout(o) {
+  const {jamb,leafFraction} = o.floorSlider;
+  const start = o.from+jamb, end = o.to-jamb;
+  const leafWidth = (end-start)*leafFraction;
+  return {start,end,leafWidth,travel:end-start-leafWidth};
+}
+
 const slidingType = o => ['sliding-door','sliding-glass-door'].includes(o.type);
 
 function openingMark(w, o) {
@@ -148,7 +158,15 @@ function openingMark(w, o) {
   if (slidingType(o)) {
     const glass = o.type === 'sliding-glass-door';
     const name = glass ? '推拉玻璃门' : '推拉门';
-    // An unsegmented band represents the door assembly, without individual leaves.
+    if (o.floorSlider) {
+      const {start,leafWidth,travel} = floorSliderLayout(o);
+      const leaf = start+travel*kitchenSlide;
+      const {trackOffset} = o.floorSlider;
+      return `<g data-opening="${o.type}" data-opening-id="${o.id}"><title>落地玻璃推拉门 · 位置及洞口宽度沿用 · 高度、门扇宽度和行程暂定</title>` +
+        line(w,o.from,o.to,'slider-track',-trackOffset) + line(w,o.from,o.to,'slider-track',trackOffset) +
+        line(w,leaf,leaf+leafWidth,'slider-panel glass') + '</g>';
+    }
+    // An unsegmented band represents the other sliding assemblies.
     return `<g data-opening="${o.type}"${o.id ? ` data-opening-id="${o.id}"` : ''}><title>${name}示意 · 门扇数量、滑动方向及精确尺寸待确认</title>` +
       line(w,o.from,o.to,'slider-panel' + (glass ? ' glass' : '')) +
       line(w,o.from,o.to,'slider-track',-6) + line(w,o.from,o.to,'slider-track',6) + '</g>';
@@ -234,9 +252,12 @@ function selectRoom(key, id = null) {
 
 function sync() {
   const room = plan.rooms[current], f = selectedItem();
+  $('kitchenslide').hidden = !['kitchen','hall'].includes(current);
+  $('kitchenfront').hidden = mode !== '3' || current !== 'kitchen';
   $('roomdims').innerHTML = room
     ? `<p><strong>图纸面积 ${room.area.toFixed(1)}㎡</strong></p><p>${plan.provisional}</p>` +
       (room.photo ? `<p>照片局部测线<br>${room.photo}</p>` : '') +
+      (['kitchen','hall'].includes(current) ? '<p>厨房落地玻璃推拉门 · 高度、门扇宽度与左右行程暂定</p>' : '') +
       plan.fixed.filter(a => a.room === current)
         .map(a => `<p>${a.name} · ${a.pending || '位置已核对，尺寸暂定'}</p>`).join('')
     : `<p>${plan.provisional}</p><p>图纸横向区段 ${plan.drawingDimensions.horizontal.bottom.map(v => (v/100).toFixed(1)).join(' / ')} m</p><p>图纸纵向区段 ${plan.drawingDimensions.vertical.map(v => (v/100).toFixed(1)).join(' / ')} m</p>`;
@@ -438,6 +459,40 @@ function buildMediaWall(asset, [ox,oy], box, group) {
   box(ox+x+(w-screenWidth)/2+1,oy+y+d-5.4,screenWidth-2,.5,screenHeight-2,'#161c21',75,1,group);
 }
 
+function updateKitchenLeaf() {
+  const leaf = model?.getObjectByName('kitchen-sliding-leaf');
+  if (leaf) leaf.position[leaf.userData.axis] = kitchenSlide*leaf.userData.travel;
+}
+
+function buildFloorSlider(wall, opening, strip) {
+  const {sill,head,jamb,rail,frame,trackOffset} = opening.floorSlider;
+  const {from,to} = opening;
+  const {start,leafWidth,travel} = floorSliderLayout(opening);
+  const stop = start+leafWidth;
+  const metal = '#202427';
+  const assembly = new three.Group();
+  assembly.name = opening.id;
+  model.add(assembly);
+  strip(assembly,from,start,sill,head,8,metal);
+  strip(assembly,to-jamb,to,sill,head,8,metal);
+  for (const offset of [-trackOffset,trackOffset]) {
+    strip(assembly,from,to,sill,sill+rail,1.5,metal,offset);
+    strip(assembly,from,to,head-rail,head,1.5,metal,offset);
+  }
+  const leaf = new three.Group();
+  leaf.name = 'kitchen-sliding-leaf';
+  leaf.userData.axis = wall.axis === 'h' ? 'x' : 'z';
+  leaf.userData.travel = travel/100;
+  assembly.add(leaf);
+  const bottom = sill+rail, top = head-rail;
+  strip(leaf,start,start+frame,bottom,top,2.5,metal,trackOffset);
+  strip(leaf,stop-frame,stop,bottom,top,2.5,metal,trackOffset);
+  strip(leaf,start+frame,stop-frame,bottom,bottom+frame,2.5,metal,trackOffset);
+  strip(leaf,start+frame,stop-frame,top-frame,top,2.5,metal,trackOffset);
+  strip(leaf,start+frame,stop-frame,bottom+frame,top-frame,.8,'#9db3bb',trackOffset,.29);
+  updateKitchenLeaf();
+}
+
 async function build3() {
   try {
     loading3d ??= initialize3d();
@@ -559,33 +614,29 @@ async function build3() {
         const window = type === 'window';
         const sliding = slidingType(opening);
         const glass = window || type === 'sliding-glass-door';
-        const sill = window ? windowSill : 0;
-        const head = window ? windowTop : doorTop;
+        const sill = opening.floorSlider?.sill ?? (window ? windowSill : 0);
+        const head = opening.floorSlider?.head ?? (window ? windowTop : doorTop);
         masonry(upper,from,to,0,sill);
         masonry(upper,from,to,head,wallHeight);
         if (window) masonry(lower,from,to,0,cutHeight);
         if (type === 'passage') continue;
 
-        const isKitchenDoor = opening.showInCutaway;
-        const assembly = isKitchenDoor ? new three.Group() : upper;
-        if (isKitchenDoor) {
-          assembly.name = opening.id;
-          model.add(assembly);
+        if (opening.floorSlider) {
+          buildFloorSlider(wall,opening,strip);
+          continue;
         }
-        const frame = isKitchenDoor ? '#202427' : glass ? '#475e61' : '#766854';
-        const border = isKitchenDoor ? 2.5 : frameWidth;
-        strip(assembly,from,from+border,sill,head,8,frame);
-        strip(assembly,to-border,to,sill,head,8,frame);
-        strip(assembly,from,to,head-border,head,8,frame);
-        if (window) strip(assembly,from,to,sill,sill+border,12,frame);
-        // Continuous glass denotes the assembly; its leaf count and parking position are unknown.
+        const frame = glass ? '#475e61' : '#766854';
+        strip(upper,from,from+frameWidth,sill,head,8,frame);
+        strip(upper,to-frameWidth,to,sill,head,8,frame);
+        strip(upper,from,to,head-frameWidth,head,8,frame);
+        if (window) strip(upper,from,to,sill,sill+frameWidth,12,frame);
         if (glass || sliding) {
-          const panel = isKitchenDoor ? '#9db3bb' : glass ? '#76adc0' : '#b2a18a';
-          strip(assembly,from+border,to-border,sill+border,head-border,
-            2,panel,0,glass ? (isKitchenDoor ? .27 : .42) : 1);
+          const panel = glass ? '#76adc0' : '#b2a18a';
+          strip(upper,from+frameWidth,to-frameWidth,sill+frameWidth,head-frameWidth,
+            2,panel,0,glass ? .42 : 1);
           if (sliding) {
-            if (!isKitchenDoor) strip(lower,from,to,0,cutHeight,2,panel,0,glass ? .42 : 1);
-            for (const group of isKitchenDoor ? [assembly] : [upper,lower]) {
+            strip(lower,from,to,0,cutHeight,2,panel,0,glass ? .42 : 1);
+            for (const group of [upper,lower]) {
               strip(group,from,to,0,3,1.5,frame,-5);
               strip(group,from,to,0,3,1.5,frame,5);
             }
@@ -645,6 +696,25 @@ $('reset').onclick = () => {
 };
 $('save').onclick = save;
 $('homeview').onclick = () => { if (mode === '3' && camera) frame3d(); else if (mode === '2') draw(); };
+$('kitchenslide').onchange = event => {
+  kitchenSlide = Number(event.target.value);
+  if (mode === '2') draw();
+  else updateKitchenLeaf();
+};
+$('kitchenfront').onclick = () => {
+  const wall = plan.walls.find(w => w.openings.some(o => o.floorSlider));
+  const door = wall.openings.find(o => o.floorSlider);
+  if (!camera || frameKey !== 'kitchen') return;
+  const [ox,oy,w,h] = viewBox();
+  const [x,z] = point(wall,(door.from+door.to)/2);
+  const [cx,cz] = [(x-ox-w/2)/100,(z-oy-h/2)/100];
+  const cy = door.floorSlider.head/200;
+  controls.target.set(cx,cy,cz);
+  camera.position.set(cx-3.5,cy+.11,cz);
+  $('walls').value = 'full';
+  controls.update();
+  updateWallVisibility();
+};
 $('b2').onclick = () => setMode('2');
 $('b3').onclick = () => setMode('3');
 window.addEventListener('resize',size3d);
