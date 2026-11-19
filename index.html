@@ -3,7 +3,7 @@
 .stage{background:#f6f3ed}.plan{width:min(100%,1120px);height:100%;padding:14px}.room{stroke:none;fill:#eee5d4}.room[data-room="bath"],.room[data-room="kitchen"],.room[data-room="balcony"]{fill:#e3ebea}.room[data-room="living"],.room[data-room="dining"],.room[data-room="hall"]{fill:#f5ecd9}.room:hover{fill:#e6dac5}.room.active{cursor:default}.roomname{font-weight:600;font-size:22px}.area{font-size:17px}.wall-segment{stroke:#302f2b;stroke-width:13;stroke-linecap:square;pointer-events:none}.opening-line{stroke:#387389;stroke-width:3;fill:none;pointer-events:none}.slider-track{stroke:#4b504c;stroke-width:1.5;stroke-dasharray:6 3}.slider-panel{stroke:#81734f;stroke-width:6}.slider-panel.glass{stroke:#75acc2;stroke-width:6}.passage-line{stroke:#806f50;stroke-width:2;stroke-dasharray:8 6;pointer-events:none}.door-leaf{stroke:#806f50;stroke-width:2.5;fill:none;pointer-events:none}.fixed-part{fill:#786443;stroke:#514126;stroke-width:1.5}.fixed-part.desk{fill:#aa8c5b}.fixed-label{fill:#fff;font-size:13px;pointer-events:none;text-anchor:middle;paint-order:stroke;stroke:#514126;stroke-width:2}.legend{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;padding:12px 20px;background:#fff;border-top:1px solid #e7e7e7;font-size:12px}.legend span:before{content:"";display:inline-block;width:12px;height:9px;margin-right:6px}.wall-key:before{background:#302f2b}.opening-key:before{border-bottom:2px dashed #806f50}.window-key:before{background:#387389}.slider-key:before{border-block:1px dashed #4b504c;background:#a4c3c9}.fixed-key:before{background:#786443}.move-key:before{background:#c9b6a4}.legend small{color:#666;font-size:12px}.hint ul{padding-left:18px}.hint strong{color:#403529}button:disabled{opacity:.45;cursor:default}@media(max-width:700px){header{padding:0 12px}.layout{height:auto;display:flex;flex-direction:column}.stage{order:-1}.view{height:clamp(290px,65vw,510px);flex:none}aside{border-right:0;border-top:1px solid #e7e7e7}.legend{padding:8px 10px;gap:6px 12px}}
 #walls,#kitchenslide{width:auto;max-width:100%}
 .fixed-part.photo-cabinet{fill:#5b4334}.fixed-label-vertical{writing-mode:vertical-rl;dominant-baseline:middle}
-</style></head><body><header><strong>MY HOME <span style="color:#999;font-weight:400">· 家居实验室</span></strong><span class="tag">户型校对预览</span></header><div class="layout"><aside><h3>空间</h3><label>查看范围</label><select id="room" aria-label="查看范围"></select><div id="roomdims" class="hint"></div><hr class="sep"><h3>家具</h3><button class="primary" id="add" style="width:100%">＋ 添加家具</button><div id="editor"><label>选择家具</label><select id="items"></select><label>名称</label><input id="name"><div class="row"><div><label>宽 cm</label><input id="fw" type="number"></div><div><label>深 cm</label><input id="fd" type="number"></div><div><label>高 cm</label><input id="fh" type="number"></div></div><label>颜色</label><input id="color" type="color"><div class="row" style="margin-top:10px"><button id="rotate">旋转 90°</button><button id="remove">删除</button></div></div><hr class="sep"><button id="reset">恢复当前空间</button><p class="hint">活动家具尺寸单位为厘米，可在 2D 拖动。家具布局保存在当前浏览器。</p></aside><main class="stage"><div class="bar"><span style="font-weight:600;margin-right:8px">视图</span><button id="b2" class="active">2D 平面</button><button id="b3">3D 示意</button><button id="homeview">重置视角</button><select id="walls" hidden aria-label="3D 墙体显示"><option value="auto">自动剖切</option><option value="full">完整墙体</option><option value="low">低墙剖切</option></select><button id="kitchenfront" hidden>厨房门正视</button><select id="kitchenslide" hidden aria-label="厨房门滑动示意"><option value="0">向左 · 实拍状态</option><option value="0.5">居中 · 示意</option><option value="1">向右 · 示意</option></select><button id="save">保存</button><span id="status" class="dim"></span></div><div class="view"><div class="plan" id="plan"></div><div id="three"></div></div><footer class="legend" id="legend"><span class="wall-key">墙体</span><span class="opening-key">门与通道</span><span class="window-key">窗</span><span class="slider-key">推拉门 · 蓝色为玻璃</span><span class="fixed-key">定制柜 · 固定</span><span class="move-key">活动家具</span><small>推拉门为示意，门扇数量、方向及尺寸待确认</small></footer></main></div>
+</style></head><body><header><strong>MY HOME <span style="color:#999;font-weight:400">· 家居实验室</span></strong><span class="tag">户型校对预览</span></header><div class="layout"><aside><h3>空间</h3><label>查看范围</label><select id="room" aria-label="查看范围"></select><div id="roomdims" class="hint"></div><hr class="sep"><h3>家具</h3><button class="primary" id="add" style="width:100%">＋ 添加家具</button><button id="addReferenceBed" hidden>加入实拍床</button><div id="editor"><label>选择家具</label><select id="items"></select><label>名称</label><input id="name"><div class="row"><div><label>宽 cm</label><input id="fw" type="number"></div><div><label>深 cm</label><input id="fd" type="number"></div><div><label>高 cm</label><input id="fh" type="number"></div></div><label>颜色</label><input id="color" type="color"><div class="row" style="margin-top:10px"><button id="rotate">旋转 90°</button><button id="remove">删除</button></div></div><hr class="sep"><button id="reset">恢复当前空间</button><p class="hint">活动家具尺寸单位为厘米，可在 2D 拖动。家具布局保存在当前浏览器。</p></aside><main class="stage"><div class="bar"><span style="font-weight:600;margin-right:8px">视图</span><button id="b2" class="active">2D 平面</button><button id="b3">3D 示意</button><button id="homeview">重置视角</button><select id="walls" hidden aria-label="3D 墙体显示"><option value="auto">自动剖切</option><option value="full">完整墙体</option><option value="low">低墙剖切</option></select><button id="kitchenfront" hidden>厨房门正视</button><select id="kitchenslide" hidden aria-label="厨房门滑动示意"><option value="0">向左 · 实拍状态</option><option value="0.5">居中 · 示意</option><option value="1">向右 · 示意</option></select><button id="save">保存</button><span id="status" class="dim"></span></div><div class="view"><div class="plan" id="plan"></div><div id="three"></div></div><footer class="legend" id="legend"><span class="wall-key">墙体</span><span class="opening-key">门与通道</span><span class="window-key">窗</span><span class="slider-key">推拉门 · 蓝色为玻璃</span><span class="fixed-key">定制柜 · 固定</span><span class="move-key">活动家具</span><small>推拉门为示意，门扇数量、方向及尺寸待确认</small></footer></main></div>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -96,7 +96,29 @@ wall('h',790,410,810,['dining'],[opening('door',445,534,-1)]);
 wall('h',790,810,1230,['living']);
 wall('h',790,1230,1350,['balcony'],[opening('window',1251,1305)]);
 
-const defaults = {studio:[
+// Evidence is independent of layout geometry: a local measurement never
+// replaces a room dimension or a saved furniture adjustment.
+const calibration = {
+  revision: 1,
+  bed: [
+    {object:'photo-bed', field:'appearance', status:'confirmed', source:'BED-12',
+      detail:'木床架、圆角木床头、蓝色床垫，床头靠独立书桌所在墙'},
+    {object:'photo-bed', field:'underframeClearance', status:'provisional', source:'BED-10',
+      value:15, detail:'图注 15，当前按厘米表现，单位待确认'},
+    {object:'photo-bed', field:'overallSizeAndOffset', status:'provisional', source:'BED-05 / BED-11 / BED-12',
+      detail:'床架、床垫外廓与贴墙距离暂按照片示意'},
+    {object:'bed-desk', field:'drawerFaces', status:'confirmed', source:'BED-09',
+      value:2, detail:'深木色柜身和台面、两片白色抽面'},
+    {object:'bed-desk', field:'floorMarks', status:'pending', source:'BED-09',
+      detail:'78.4 / 42 的单位及端点待确认，未用于替换外廓'},
+    {object:'bed-wall-return', field:'floorMarks', status:'pending', source:'BED-11',
+      detail:'19 / 22 / 43 为床旁局部标注，墙线与端点仍待确认'}
+  ]
+};
+const referenceBed = {id:'reference-bed', model:'photo-bed', n:'实拍木床与床垫',
+  x:8,y:45,w:205,d:140,h:95,c:'#33577c',turns:0};
+
+const defaults = {bed:[referenceBed],studio:[
   {id:1,n:'沙发床',x:135,y:20,w:145,d:80,h:80,c:'#c9b6a4'},
   {id:2,n:'升降桌',x:310,y:100,w:65,d:130,h:75,c:'#795f4a'},
   {id:3,n:'父亲电脑桌',x:165,y:275,w:100,d:55,h:75,c:'#b7b7b7'}
@@ -219,7 +241,7 @@ function draw() {
 
 function dragFurniture(event, el) {
   event.preventDefault();
-  const id = Number(el.dataset.id);
+  const id = furniture(el.dataset.owner).find(f => String(f.id) === el.dataset.id)?.id;
   if (current === 'all') {
     selectRoom(el.dataset.owner,id);
     return;
@@ -261,6 +283,13 @@ function sync() {
       plan.fixed.filter(a => a.room === current)
         .map(a => `<p>${a.name} · ${a.pending || '位置已核对，尺寸暂定'}</p>`).join('')
     : `<p>${plan.provisional}</p><p>图纸横向区段 ${plan.drawingDimensions.horizontal.bottom.map(v => (v/100).toFixed(1)).join(' / ')} m</p><p>图纸纵向区段 ${plan.drawingDimensions.vertical.map(v => (v/100).toFixed(1)).join(' / ')} m</p>`;
+  if (calibration[current]) {
+    $('roomdims').insertAdjacentHTML('beforeend',calibration[current].map(({status,source,detail}) => {
+      const label = {confirmed:'已确认',provisional:'暂定',pending:'待确认'}[status];
+      return `<p><strong>${label}</strong> · ${detail} <small>(${source})</small></p>`;
+    }).join(''));
+  }
+  $('addReferenceBed').hidden = current !== 'bed' || furniture('bed').some(f => f.model === 'photo-bed');
   $('editor').hidden = !room;
   $('add').disabled = $('reset').disabled = !room;
   $('items').replaceChildren(new Option('选择活动家具',''), ...furniture(current).map(o => new Option(o.n,o.id)));
@@ -493,6 +522,44 @@ function buildFloorSlider(wall, opening, strip) {
   updateKitchenLeaf();
 }
 
+function buildPhotoBed(f,x,y,box) {
+  const turns = (f.turns || 0)%4;
+  const length = turns%2 ? f.d : f.w;
+  const width = turns%2 ? f.w : f.d;
+  const clearance = Math.min(calibration.bed.find(record => record.field === 'underframeClearance').value,f.h*.24);
+  const platform = f.h*.36, mattress = f.h*.54;
+  const wood = '#78513b', trim = '#62402f';
+  function part(u,v,l,w,bottom,top,color) {
+    const bounds = [
+      [u,v,l,w], [width-v-w,u,w,l],
+      [length-u-l,width-v-w,l,w], [v,length-u-l,w,l]
+    ][turns];
+    const [dx,dy,px,py] = bounds;
+    return box(x+f.x+dx,y+f.y+dy,px,py,top-bottom,color,bottom);
+  }
+  for (const u of [length*.12,length*.80]) {
+    for (const v of [width*.09,width*.82]) part(u,v,length*.075,width*.09,0,clearance,trim);
+  }
+  part(0,0,length,width,clearance,platform,wood);
+  const headboard = part(0,width*.02,length*.035,width*.96,platform,f.h,wood);
+  const halfWidth = width*.96/200, halfHeight = (f.h-platform)/200;
+  const radius = Math.min(.12,halfWidth*.4,halfHeight*.5);
+  const outline = new three.Shape();
+  outline.moveTo(-halfWidth,-halfHeight);
+  outline.lineTo(halfWidth,-halfHeight);
+  outline.lineTo(halfWidth,halfHeight-radius);
+  outline.quadraticCurveTo(halfWidth,halfHeight,halfWidth-radius,halfHeight);
+  outline.lineTo(-halfWidth+radius,halfHeight);
+  outline.quadraticCurveTo(-halfWidth,halfHeight,-halfWidth,halfHeight-radius);
+  outline.closePath();
+  headboard.geometry.dispose();
+  headboard.geometry = new three.ExtrudeGeometry(outline,{depth:length*.035/100,bevelEnabled:false});
+  headboard.geometry.translate(0,0,-length*.035/200);
+  headboard.rotation.y = (turns+1)*Math.PI/2;
+  part(length*.045,width*.027,length*.925,width*.946,platform,mattress,f.c);
+  part(length*.065,width*.30,length*.15,width*.40,mattress,mattress+f.h*.065,f.c);
+}
+
 async function build3() {
   try {
     loading3d ??= initialize3d();
@@ -516,11 +583,15 @@ async function build3() {
         new three.MeshStandardMaterial({color,opacity,transparent:opacity < 1,roughness:.78}));
       mesh.position.set((x+width/2-ox-w/2)/100,(base+height/2)/100,(y+depth/2-oy-h/2)/100);
       parent.add(mesh);
+      return mesh;
     }
     for (const key of roomKeys()) {
       const [x,y,width,depth] = plan.rooms[key].box;
       box(x,y,width,depth,4,'#f2f1ee',-4);
-      for (const f of furniture(key)) box(x+f.x,y+f.y,f.w,f.d,f.h,f.c);
+      for (const f of furniture(key)) {
+        if (f.model === 'photo-bed') buildPhotoBed(f,x,y,box);
+        else box(x+f.x,y+f.y,f.w,f.d,f.h,f.c);
+      }
       for (const asset of plan.fixed.filter(a => a.room === key)) {
         if (asset.cabinet) {
           const cabinet = new three.Group();
@@ -573,7 +644,9 @@ async function build3() {
             const upperHeight = Math.min(48,height-top);
             box(cx,cy,2,pd,height-upperHeight-top,'#70513e',top);
             box(cx,cy,23,pd,2,'#755844',top+(height-upperHeight-top)*.55);
-            box(cx,cy,Math.min(pw,23),pd,9,'#eeeae3',top-13);
+            for (let i=0; i<2; i++) {
+              box(cx+pw-2,cy+3+i*(pd-6)/2,2,(pd-6)/2-.7,9,'#eeeae3',top-13);
+            }
             box(cx,cy,Math.min(pw,26),pd,upperHeight,'#a18a68',height-upperHeight);
           }
         }
@@ -656,7 +729,7 @@ async function build3() {
 
 $('room').replaceChildren(new Option('全屋户型','all'),...Object.entries(plan.rooms).map(([key,r]) => new Option(label(r),key)));
 $('room').onchange = e => selectRoom(e.target.value);
-$('items').onchange = e => { selected = Number(e.target.value) || null; sync(); };
+$('items').onchange = e => { selected = furniture(current).find(f => String(f.id) === e.target.value)?.id ?? null; sync(); };
 for (const [id,key] of Object.entries({name:'n',fw:'w',fd:'d',fh:'h',color:'c'})) {
   $(id).onchange = e => {
     const f = selectedItem();
@@ -666,6 +739,14 @@ for (const [id,key] of Object.entries({name:'n',fw:'w',fd:'d',fh:'h',color:'c'})
     sync();
   };
 }
+$('addReferenceBed').onclick = () => {
+  if (current !== 'bed' || furniture('bed').some(f => f.model === 'photo-bed')) return;
+  const f = structuredClone(referenceBed);
+  (data.f.bed ??= []).push(f);
+  selected = f.id;
+  save();
+  sync();
+};
 $('add').onclick = () => {
   const f = {id:Date.now(),n:'新家具',x:40,y:40,w:80,d:50,h:75,c:'#d1bfae'};
   (data.f[current] ??= []).push(f);
@@ -677,6 +758,7 @@ $('rotate').onclick = () => {
   const f = selectedItem();
   if (!f) return;
   [f.w,f.d] = [f.d,f.w];
+  if (f.model === 'photo-bed') f.turns = ((f.turns || 0)+1)%4;
   save();
   sync();
 };
