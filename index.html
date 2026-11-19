@@ -48,7 +48,14 @@ const plan = {
       parts:[{box:[137,301.5,190,42], label:'玄关矮柜', height:92}]},
     {id:'dining-tall', room:'dining', name:'餐厅高柜', cabinet:'hutch', facing:'right',
       pending:'宽、深、高及贴墙偏移暂定',
-      parts:[{box:[6.5,6.5,42,195], label:'餐厅高柜', height:249}]}
+      parts:[{box:[6.5,6.5,42,195], label:'餐厅高柜', height:249}]},
+    {id:'living-tv', room:'living', name:'电视墙定制柜', cabinet:'media-wall', facing:'up',
+      pending:'左右高柜、低柜与电视尺寸及距阳台门净距暂定',
+      parts:[
+        {box:[78,306.5,42,37], label:'展示柜', height:246},
+        {box:[120,303.5,244,40], label:'电视低柜', height:35},
+        {box:[364,306.5,40,37], label:'展示柜', height:246}
+      ]}
   ]
 };
 
@@ -69,7 +76,9 @@ wall('h',290,810,920,['master','hall'],[opening('door',810,912,-1)]);
 wall('h',290,920,1230,['master','kitchen']);
 wall('v',410,290,440,['bath'],[opening('window',339,390)]);
 wall('v',700,290,440,['bath','hall'],[opening('door',290,371,-1)]);
-wall('v',920,290,440,['hall','kitchen'],[opening('sliding-door',290,371)]);
+wall('v',920,290,440,['hall','kitchen'],[
+  {...opening('sliding-glass-door',290,371), id:'kitchen-glass-slider', showInCutaway:true}
+]);
 wall('v',1230,290,440,['kitchen'],[opening('window',302,396)]);
 wall('h',440,0,410,['studio'],[opening('window',117,281)]);
 wall('h',440,410,700,['bath','dining']);
@@ -140,7 +149,7 @@ function openingMark(w, o) {
     const glass = o.type === 'sliding-glass-door';
     const name = glass ? '推拉玻璃门' : '推拉门';
     // An unsegmented band represents the door assembly, without individual leaves.
-    return `<g data-opening="${o.type}"><title>${name}示意 · 门扇数量、滑动方向及精确尺寸待确认</title>` +
+    return `<g data-opening="${o.type}"${o.id ? ` data-opening-id="${o.id}"` : ''}><title>${name}示意 · 门扇数量、滑动方向及精确尺寸待确认</title>` +
       line(w,o.from,o.to,'slider-panel' + (glass ? ' glass' : '')) +
       line(w,o.from,o.to,'slider-track',-6) + line(w,o.from,o.to,'slider-track',6) + '</g>';
   }
@@ -158,10 +167,10 @@ function openingMark(w, o) {
 
 function fixedMark(asset) {
   const [ox,oy] = plan.rooms[asset.room].box;
-  const labelClass = asset.facing === 'right' ? ' fixed-label-vertical' : '';
+  const labelClass = asset.facing === 'right' || asset.cabinet === 'media-wall' ? ' fixed-label-vertical' : '';
   return `<g data-fixed="${asset.id}" transform="translate(${ox} ${oy})"><title>${asset.name} · 固定 · 尺寸暂定</title>` +
     asset.parts.map(({box:[x,y,w,h],label,desk}) =>
-      `<rect class="fixed-part${desk ? ' desk' : ''}${asset.cabinet ? ' photo-cabinet' : ''}" x="${x}" y="${y}" width="${w}" height="${h}"/><text class="fixed-label${labelClass}" x="${x+w/2}" y="${y+h/2+4}">${label}</text>`).join('') + '</g>';
+      `<rect class="fixed-part${desk ? ' desk' : ''}${asset.cabinet ? ' photo-cabinet' : ''}" x="${x}" y="${y}" width="${w}" height="${h}"/><text class="fixed-label${w<h ? labelClass : ''}" x="${x+w/2}" y="${y+h/2+4}">${label}</text>`).join('') + '</g>';
 }
 
 function draw() {
@@ -401,6 +410,34 @@ function buildDiningCabinet(asset, [x,y], box, group) {
   doors(drawerEnd+3,span-drawerEnd-6,1,counter+1,height-4);
 }
 
+function buildMediaWall(asset, [ox,oy], box, group) {
+  const wood = '#523a2d', dark = '#232325', white = '#edeae6';
+  const [left,base,right] = asset.parts;
+  for (const {box:[x,y,w,d],height} of [left,right]) {
+    const add = (u,v,width,depth,bottom,top,color,opacity=1) =>
+      box(ox+x+u,oy+y+v,width,depth,top-bottom,color,bottom,opacity,group);
+    add(0,d-2,w,2,4,height,wood);
+    for (const side of [0,w-2]) {
+      add(side,0,2,d,0,height,wood);
+      add(side,0,2,1,4,height-2,dark);
+    }
+    for (const level of [4,44,83,122,161,200,height-2]) {
+      add(2,2,w-4,d-4,level,level+2,wood);
+    }
+    for (const level of [4,height-4]) add(2,0,w-4,1,level,level+2,dark);
+    add(2,1,w-4,1,6,height-4,'#333d40',.42);
+  }
+  const {box:[x,y,w,d],height} = base;
+  box(ox+x,oy+y+2,w,d-2,height-5,wood,2,1,group);
+  box(ox+x,oy+y,w,d,3,wood,height-3,1,group);
+  for (let i=0; i<6; i++) {
+    box(ox+x+i*w/6+.55,oy+y,w/6-1.1,2,height-9,white,5,1,group);
+  }
+  const screenWidth = w*.74, screenHeight = screenWidth*9/16;
+  box(ox+x+(w-screenWidth)/2,oy+y+d-5,screenWidth,3,screenHeight,dark,74,1,group);
+  box(ox+x+(w-screenWidth)/2+1,oy+y+d-5.4,screenWidth-2,.5,screenHeight-2,'#161c21',75,1,group);
+}
+
 async function build3() {
   try {
     loading3d ??= initialize3d();
@@ -434,18 +471,40 @@ async function build3() {
           const cabinet = new three.Group();
           cabinet.name = asset.id;
           model.add(cabinet);
-          buildDiningCabinet(asset,[x,y],box,cabinet);
+          if (asset.cabinet === 'media-wall') buildMediaWall(asset,[x,y],box,cabinet);
+          else buildDiningCabinet(asset,[x,y],box,cabinet);
           continue;
         }
         for (const {box:[px,py,pw,pd],height,desk} of asset.parts) {
           const cx = x+px, cy = y+py;
           if (!desk) {
-            box(cx,cy,pw,pd,height-6,'#a18a68',6);
-            box(cx+1,cy+1,pw-2,pd-2,6,'#70624d');
+            const alongY = pd > pw;
+            const frontPositive = asset.id !== 'bed-wardrobe' && asset.id !== 'hall-storage';
+            const span = alongY ? pd : pw;
+            const depth = alongY ? pw : pd;
+            function panel(u,v,width,thickness,base,top,color) {
+              const front = frontPositive ? v : depth-v-thickness;
+              const bounds = alongY ? [cx+front,cy+u,thickness,width] : [cx+u,cy+front,width,thickness];
+              box(...bounds,top-base,color,base);
+            }
+            panel(1,1,span-2,depth-2,0,6,'#554237');
+            panel(0,0,span,depth-2,6,height,'#655344');
+            if (asset.id === 'hall-storage') {
+              panel(1,depth-2,span-2,2,7,height*.40,'#ebe7df');
+              panel(1,depth-10,span-2,8,height*.40,height*.40+2,'#70513e');
+              panel(1,depth-2,span-2,2,height*.62,height-1,'#ebe7df');
+            } else {
+              const count = asset.id === 'studio-l' ? 5 : 3;
+              for (let i=0; i<count; i++) {
+                const pitch = span/count;
+                panel(i*pitch+.55,depth-2,pitch-1.1,2,7,height*.78-.55,'#eeeae3');
+                panel(i*pitch+.55,depth-2,pitch-1.1,2,height*.78+.55,height-1,'#eeeae3');
+              }
+            }
             continue;
           }
           const top = Math.min(previewGeometry.deskHeight,height);
-          box(cx,cy,pw,pd,4,'#956a45',top-4);
+          box(cx,cy,pw,pd,4,'#765540',top-4);
           // The transverse side panels stay within the accepted desktop footprint.
           const endAlongX = asset.id !== 'bed-desk';
           if (endAlongX) {
@@ -457,7 +516,9 @@ async function build3() {
           }
           if (height > top) {
             const upperHeight = Math.min(48,height-top);
-            box(cx,cy,2,pd,height-upperHeight-top,'#857158',top);
+            box(cx,cy,2,pd,height-upperHeight-top,'#70513e',top);
+            box(cx,cy,23,pd,2,'#755844',top+(height-upperHeight-top)*.55);
+            box(cx,cy,Math.min(pw,23),pd,9,'#eeeae3',top-13);
             box(cx,cy,Math.min(pw,26),pd,upperHeight,'#a18a68',height-upperHeight);
           }
         }
@@ -505,19 +566,26 @@ async function build3() {
         if (window) masonry(lower,from,to,0,cutHeight);
         if (type === 'passage') continue;
 
-        const frame = glass ? '#475e61' : '#766854';
-        strip(upper,from,from+frameWidth,sill,head,8,frame);
-        strip(upper,to-frameWidth,to,sill,head,8,frame);
-        strip(upper,from,to,head-frameWidth,head,8,frame);
-        if (window) strip(upper,from,to,sill,sill+frameWidth,12,frame);
-        // A continuous surface indicates an assembly, without inferring leaves.
+        const isKitchenDoor = opening.showInCutaway;
+        const assembly = isKitchenDoor ? new three.Group() : upper;
+        if (isKitchenDoor) {
+          assembly.name = opening.id;
+          model.add(assembly);
+        }
+        const frame = isKitchenDoor ? '#202427' : glass ? '#475e61' : '#766854';
+        const border = isKitchenDoor ? 2.5 : frameWidth;
+        strip(assembly,from,from+border,sill,head,8,frame);
+        strip(assembly,to-border,to,sill,head,8,frame);
+        strip(assembly,from,to,head-border,head,8,frame);
+        if (window) strip(assembly,from,to,sill,sill+border,12,frame);
+        // Continuous glass denotes the assembly; its leaf count and parking position are unknown.
         if (glass || sliding) {
-          const panel = glass ? '#76adc0' : '#b2a18a';
-          strip(upper,from+frameWidth,to-frameWidth,sill+frameWidth,head-frameWidth,
-            2,panel,0,glass ? .42 : 1);
+          const panel = isKitchenDoor ? '#9db3bb' : glass ? '#76adc0' : '#b2a18a';
+          strip(assembly,from+border,to-border,sill+border,head-border,
+            2,panel,0,glass ? (isKitchenDoor ? .27 : .42) : 1);
           if (sliding) {
-            strip(lower,from,to,0,cutHeight,2,panel,0,glass ? .42 : 1);
-            for (const group of [upper,lower]) {
+            if (!isKitchenDoor) strip(lower,from,to,0,cutHeight,2,panel,0,glass ? .42 : 1);
+            for (const group of isKitchenDoor ? [assembly] : [upper,lower]) {
               strip(group,from,to,0,3,1.5,frame,-5);
               strip(group,from,to,0,3,1.5,frame,5);
             }
