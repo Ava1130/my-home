@@ -99,8 +99,16 @@ wall('h',790,1230,1350,['balcony'],[opening('window',1251,1305)]);
 // Evidence is independent of layout geometry: a local measurement never
 // replaces a room dimension or a saved furniture adjustment.
 const calibration = {
-  revision: 1,
+  revision: 2,
+  studio: [{object:'studio-l',field:'elevation',status:'confirmed',source:'P2–P3 / P10',
+    detail:'固定 L 型书桌与衣柜相接，开放格只在书桌端；分段比例与尺寸暂定'}],
+  master: [{object:'master-l',field:'elevation',status:'confirmed',source:'P13–P14 / P12',
+    detail:'左端圆角开放架，右端开放格接固定书桌；两侧结构不对称，分段尺寸暂定'}],
   bed: [
+    {object:'bed-wardrobe',field:'elevation',status:'confirmed',source:'P8 / P9',
+      detail:'右端圆角开放架、浅色主体及下部抽屉组；分段尺寸暂定'},
+    {object:'bed-desk',field:'elevation',status:'confirmed',source:'P5–P6',
+      detail:'浅色双门上柜、深木开放格和落地侧背板；分段尺寸暂定'},
     {object:'photo-bed', field:'appearance', status:'confirmed', source:'BED-12',
       detail:'木床架、圆角木床头、蓝色床垫，床头靠独立书桌所在墙'},
     {object:'photo-bed', field:'underframeClearance', status:'provisional', source:'BED-10',
@@ -118,14 +126,20 @@ const calibration = {
 const referenceBed = {id:'reference-bed', model:'photo-bed', n:'实拍木床与床垫',
   x:8,y:45,w:205,d:140,h:95,c:'#33577c',turns:0};
 
-const defaults = {bed:[referenceBed],studio:[
+const retiredStudioPlaceholders = [
   {id:1,n:'沙发床',x:135,y:20,w:145,d:80,h:80,c:'#c9b6a4'},
   {id:2,n:'升降桌',x:310,y:100,w:65,d:130,h:75,c:'#795f4a'},
   {id:3,n:'父亲电脑桌',x:165,y:275,w:100,d:55,h:75,c:'#b7b7b7'}
-]};
+];
+const defaults = {bed:[referenceBed]};
 let saved;
 try { saved = JSON.parse(localStorage.getItem('myhome-v32')); } catch {}
 const data = saved?.f ? saved : {f:structuredClone(defaults)};
+if (Array.isArray(data.f.studio)) {
+  data.f.studio = data.f.studio.filter(item => !retiredStudioPlaceholders.some(placeholder =>
+    Object.keys(item).length === Object.keys(placeholder).length &&
+    Object.entries(placeholder).every(([field,value]) => item[field] === value)));
+}
 let current = 'all', selected = null, mode = '2';
 let renderer, scene, camera, controls, model, loading3d, three, frameKey;
 const roomKeys = () => current === 'all' ? Object.keys(plan.rooms) : [current];
@@ -560,6 +574,148 @@ function buildPhotoBed(f,x,y,box) {
   part(length*.065,width*.30,length*.15,width*.40,mattress,mattress+f.h*.065,f.c);
 }
 
+// Elevation layouts use proportions within the accepted footprint. In each
+// elevation u increases left to right and v increases toward the viewer.
+const bedroomCabinetProfiles = {
+  'studio-l': {
+    facing:'east', desktop:'north', ceilingBand:.24,
+    bays:[{kind:'study',width:.15},{kind:'doors',width:.51,count:3,split:.40},
+      {kind:'drawers',width:.34,count:2,rows:3,split:.39}]
+  },
+  'bed-wardrobe': {
+    facing:'west', ceilingBand:.25,
+    bays:[{kind:'doors',width:.46,count:3,split:.39},
+      {kind:'drawers',width:.37,count:2,rows:3,split:.38},
+      {kind:'rounded',width:.17,corner:'end'}]
+  },
+  'bed-desk': {facing:'east', ceilingBand:.34, standalone:true},
+  'master-l': {
+    facing:'east', desktop:'south', ceilingBand:.25,
+    bays:[{kind:'rounded',width:.17,corner:'start'},
+      {kind:'drawers',width:.31,count:2,rows:2,split:.27},
+      {kind:'doors',width:.32,count:2,split:.40},{kind:'study',width:.20}]
+  }
+};
+
+function cabinetElevation(part,[ox,oy],facing,box,group) {
+  const [px,py,w,d] = part.box;
+  const x=ox+px, y=oy+py;
+  const acrossY = facing === 'east' || facing === 'west';
+  const span = acrossY ? d : w, depth = acrossY ? w : d;
+  function point(u,v) {
+    switch (facing) {
+      case 'east': return [x+v,y+d-u];
+      case 'west': return [x+w-v,y+u];
+      case 'north': return [x+u,y+d-v];
+      case 'south': return [x+w-u,y+v];
+    }
+  }
+  function board(u,v,width,thickness,base,top,color,corner) {
+    if (width<=0 || thickness<=0 || top<=base) return;
+    const [ax,az]=point(u,v), [bx,bz]=point(u+width,v+thickness);
+    const mesh=box(Math.min(ax,bx),Math.min(az,bz),Math.abs(bx-ax),Math.abs(bz-az),top-base,color,base,1,group);
+    if (!corner) return mesh;
+    const radius=Math.min(width*.4,thickness*.5,7);
+    const shape=new three.Shape(), cx=(ax+bx)/2, cz=(az+bz)/2;
+    const local=(a,b) => {const [gx,gz]=point(u+a,v+b); return [(gx-cx)/100,(cz-gz)/100];};
+    shape.moveTo(...local(0,0));
+    shape.lineTo(...local(width,0));
+    shape.lineTo(...local(width,thickness-(corner==='end' ? radius : 0)));
+    if (corner==='end') shape.quadraticCurveTo(...local(width,thickness),...local(width-radius,thickness));
+    shape.lineTo(...local(corner==='start' ? radius : 0,thickness));
+    if (corner==='start') shape.quadraticCurveTo(...local(0,thickness),...local(0,thickness-radius));
+    shape.closePath();
+    mesh.geometry.dispose();
+    mesh.geometry=new three.ExtrudeGeometry(shape,{depth:(top-base)/100,bevelEnabled:false});
+    mesh.geometry.translate(0,0,-(top-base)/200);
+    mesh.rotation.x=-Math.PI/2;
+    return mesh;
+  }
+  return {span,depth,board};
+}
+
+function buildBedroomCabinet(asset,origin,box,group) {
+  const profile=bedroomCabinetProfiles[asset.id];
+  const [body,returnDesk]=asset.parts;
+  const elevation=cabinetElevation(body,origin,profile.facing,box,group);
+  const {span,depth,board}=elevation;
+  const wood='#614331', inside='#493225', face='#ece8dd';
+  const top=body.height;
+  const deskTop=profile.standalone ? previewGeometry.deskHeight : returnDesk?.height;
+  const header=top*(1-profile.ceilingBand);
+  const substrate=2, reveal=.65;
+  const wallFace=previewGeometry.wallThickness/2+.5;
+  function fronts(draw,depth,u,width,bottom,top,count) {
+    const pitch=width/count;
+    for(let i=0;i<count;i++) {
+      draw(u+i*pitch+reveal/2,depth-2,pitch-reveal,2,bottom+reveal/2,top-reveal/2,face);
+    }
+  }
+  function openBay(u,width,bottom,ceiling,levels,rounded) {
+    board(u,wallFace,width,substrate,bottom,ceiling,inside);
+    // A rounded exposed end has no full-depth side panel hiding the curve.
+    const leftDepth=rounded==='start' ? depth*.45 : depth-2;
+    const rightDepth=rounded==='end' ? depth*.45 : depth-2;
+    board(u,wallFace+2,substrate,leftDepth-wallFace-2,bottom,ceiling,wood);
+    board(u+width-substrate,wallFace+2,substrate,rightDepth-wallFace-2,bottom,ceiling,wood);
+    for(const ratio of levels) {
+      const height=bottom+(ceiling-bottom)*ratio;
+      board(u,wallFace,width,depth-wallFace,height,height+2.4,wood,rounded);
+    }
+  }
+  function desktop({board:draw,span:width,depth:reach},height,support,rounded) {
+    draw(0,0,width,reach,height-3,height,wood,rounded);
+    draw(0,wallFace,width,2,0,height-3,inside);
+    if (support==='both' || support==='start') draw(0,2,2.5,reach-2,0,height-3,wood);
+    if (support==='both' || support==='end') draw(width-2.5,2,2.5,reach-2,0,height-3,wood);
+    draw(2.5,reach-14,width-5,12,height-13,height-3,inside);
+    fronts(draw,reach,2.5,width-5,height-13,height-3,2);
+  }
+
+  if (profile.standalone) {
+    desktop(elevation,deskTop,'both');
+    openBay(0,span,deskTop,header,[.60]);
+    board(0,0,span,depth-2,header,top-1.5,wood);
+    fronts(board,depth,0,span,header,top-1.5,2);
+    board(0,0,span,depth,top-1.5,top,wood);
+    return;
+  }
+
+  let u=0;
+  for (const bay of profile.bays) {
+    const width=span*bay.width;
+    board(u,0,width,depth-2,header,top-1.5,wood);
+    fronts(board,depth,u,width,header,top-1.5,bay.count ?? 1);
+    if (bay.kind==='rounded') {
+      openBay(u,width,4,header,[0,.18,.36,.79],bay.corner);
+      board(u,0,width,depth,0,4,wood,bay.corner);
+    } else if (bay.kind==='study') {
+      openBay(u,width,deskTop,header,[.34,.68]);
+      board(u,0,width,depth,deskTop-3,deskTop,wood);
+      board(u,wallFace,width,2,0,deskTop-3,inside);
+      board(u,2,2,depth-2,0,deskTop-3,wood);
+      board(u+width-2,2,2,depth-2,0,deskTop-3,wood);
+    } else {
+      const split=top*bay.split;
+      board(u,0,width,depth-2,4,header,inside);
+      board(u,0,width,depth-1,0,4,wood);
+      fronts(board,depth,u,width,split,header,bay.count);
+      if (bay.kind==='drawers') {
+        const pitch=(split-4)/bay.rows;
+        for(let i=0;i<bay.rows;i++) fronts(board,depth,u,width,4+i*pitch,4+(i+1)*pitch,1);
+      } else {
+        fronts(board,depth,u,width,4,split,bay.count);
+      }
+    }
+    u+=width;
+  }
+  board(0,0,span,depth,top-1.5,top,wood);
+  if (returnDesk) {
+    const end=profile.desktop==='north' ? 'end' : 'start';
+    desktop(cabinetElevation(returnDesk,origin,profile.desktop,box,group),deskTop,end,end);
+  }
+}
+
 async function build3() {
   try {
     loading3d ??= initialize3d();
@@ -601,55 +757,21 @@ async function build3() {
           else buildDiningCabinet(asset,[x,y],box,cabinet);
           continue;
         }
-        for (const {box:[px,py,pw,pd],height,desk} of asset.parts) {
-          const cx = x+px, cy = y+py;
-          if (!desk) {
-            const alongY = pd > pw;
-            const frontPositive = asset.id !== 'bed-wardrobe' && asset.id !== 'hall-storage';
-            const span = alongY ? pd : pw;
-            const depth = alongY ? pw : pd;
-            function panel(u,v,width,thickness,base,top,color) {
-              const front = frontPositive ? v : depth-v-thickness;
-              const bounds = alongY ? [cx+front,cy+u,thickness,width] : [cx+u,cy+front,width,thickness];
-              box(...bounds,top-base,color,base);
-            }
-            panel(1,1,span-2,depth-2,0,6,'#554237');
-            panel(0,0,span,depth-2,6,height,'#655344');
-            if (asset.id === 'hall-storage') {
-              panel(1,depth-2,span-2,2,7,height*.40,'#ebe7df');
-              panel(1,depth-10,span-2,8,height*.40,height*.40+2,'#70513e');
-              panel(1,depth-2,span-2,2,height*.62,height-1,'#ebe7df');
-            } else {
-              const count = asset.id === 'studio-l' ? 5 : 3;
-              for (let i=0; i<count; i++) {
-                const pitch = span/count;
-                panel(i*pitch+.55,depth-2,pitch-1.1,2,7,height*.78-.55,'#eeeae3');
-                panel(i*pitch+.55,depth-2,pitch-1.1,2,height*.78+.55,height-1,'#eeeae3');
-              }
-            }
-            continue;
-          }
-          const top = Math.min(previewGeometry.deskHeight,height);
-          box(cx,cy,pw,pd,4,'#765540',top-4);
-          // The transverse side panels stay within the accepted desktop footprint.
-          const endAlongX = asset.id !== 'bed-desk';
-          if (endAlongX) {
-            box(cx,cy,3,pd,top-4,'#857158');
-            box(cx+pw-3,cy,3,pd,top-4,'#857158');
-          } else {
-            box(cx,cy,pw,3,top-4,'#857158');
-            box(cx,cy+pd-3,pw,3,top-4,'#857158');
-          }
-          if (height > top) {
-            const upperHeight = Math.min(48,height-top);
-            box(cx,cy,2,pd,height-upperHeight-top,'#70513e',top);
-            box(cx,cy,23,pd,2,'#755844',top+(height-upperHeight-top)*.55);
-            for (let i=0; i<2; i++) {
-              box(cx+pw-2,cy+3+i*(pd-6)/2,2,(pd-6)/2-.7,9,'#eeeae3',top-13);
-            }
-            box(cx,cy,Math.min(pw,26),pd,upperHeight,'#a18a68',height-upperHeight);
-          }
+        if (bedroomCabinetProfiles[asset.id]) {
+          const cabinet = new three.Group();
+          cabinet.name = asset.id;
+          model.add(cabinet);
+          buildBedroomCabinet(asset,[x,y],box,cabinet);
+          continue;
         }
+        // The hall cabinet retains its existing elevation.
+        const [{box:[px,py,pw,pd],height}] = asset.parts;
+        const cx=x+px, cy=y+py;
+        box(cx+1,cy+1,pw-2,pd-2,6,'#554237');
+        box(cx,cy+2,pw,pd-2,height-6,'#655344',6);
+        box(cx+1,cy,pw-2,2,height*.40-7,'#ebe7df',7);
+        box(cx+1,cy+2,pw-2,8,2,'#70513e',height*.40);
+        box(cx+1,cy,pw-2,2,height*.38-1,'#ebe7df',height*.62);
       }
     }
     for (const wall of visibleWalls()) {
