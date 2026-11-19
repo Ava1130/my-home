@@ -2,6 +2,7 @@
 *{box-sizing:border-box}body{margin:0;background:#f5f5f7;color:#191919;font:14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}header{height:60px;background:white;border-bottom:1px solid #e5e5e5;display:flex;align-items:center;justify-content:space-between;padding:0 24px}header strong{font-size:18px}.tag{font-size:12px;color:#666;background:#f4f4f4;padding:7px 10px;border-radius:20px}.layout{height:calc(100vh - 60px);display:grid;grid-template-columns:260px minmax(0,1fr)}aside{padding:22px;background:#fff;border-right:1px solid #e7e7e7;overflow:auto}h3{margin:4px 0 15px;font-size:15px}label{display:block;color:#666;font-size:12px;margin:13px 0 6px}input,select,button{font:inherit;border-radius:9px;border:1px solid #dedede;padding:10px;background:#fff;max-width:100%}input,select{width:100%}button{cursor:pointer}button:hover{background:#f6f6f6}.primary{background:#e60012;color:white;border-color:#e60012}.primary:hover{background:#c90011}.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}.stage{min-width:0;display:flex;flex-direction:column}.bar{padding:12px 20px;display:flex;gap:8px;background:white;border-bottom:1px solid #eaeaea;align-items:center;flex-wrap:wrap}.bar button.active{background:#171717;color:white}.view{position:relative;flex:1;min-height:0;overflow:hidden;display:flex;justify-content:center;align-items:center}.plan{width:min(95%,1050px);height:min(94%,800px);touch-action:none}.plan svg{width:100%;height:100%;overflow:visible}.room{fill:#eee9de;stroke:#262626;stroke-width:9;cursor:pointer}.room:hover{fill:#e5e0d5}.room.active{fill:#f4f0e9}.roomname{font-size:21px;fill:#333;pointer-events:none;text-anchor:middle}.area{font-size:15px;fill:#777;pointer-events:none;text-anchor:middle}.furniture{cursor:grab;touch-action:none}.furniture rect{stroke:#777;stroke-width:1.5}.furniture.selected rect{stroke:#e60012;stroke-width:4}.furniture text{pointer-events:none;font-size:12px;fill:#222}#three{position:absolute;inset:0;display:none}#three canvas{display:block}.sep{border:0;border-top:1px solid #eee;margin:20px 0}.hint{font-size:12px;color:#888;line-height:1.7}.dim{font-size:12px;color:#777}.hidden{display:none!important}@media(max-width:700px){.layout{grid-template-columns:180px minmax(0,1fr)}aside{padding:12px}.bar{padding:8px}.bar button{padding:7px}}
 .stage{background:#f6f3ed}.plan{width:min(100%,1120px);height:100%;padding:14px}.room{stroke:none;fill:#eee5d4}.room[data-room="bath"],.room[data-room="kitchen"],.room[data-room="balcony"]{fill:#e3ebea}.room[data-room="living"],.room[data-room="dining"],.room[data-room="hall"]{fill:#f5ecd9}.room:hover{fill:#e6dac5}.room.active{cursor:default}.roomname{font-weight:600;font-size:22px}.area{font-size:17px}.wall-segment{stroke:#302f2b;stroke-width:13;stroke-linecap:square;pointer-events:none}.opening-line{stroke:#387389;stroke-width:3;fill:none;pointer-events:none}.slider-track{stroke:#4b504c;stroke-width:1.5;stroke-dasharray:6 3}.slider-panel{stroke:#81734f;stroke-width:6}.slider-panel.glass{stroke:#75acc2;stroke-width:6}.passage-line{stroke:#806f50;stroke-width:2;stroke-dasharray:8 6;pointer-events:none}.door-leaf{stroke:#806f50;stroke-width:2.5;fill:none;pointer-events:none}.fixed-part{fill:#786443;stroke:#514126;stroke-width:1.5}.fixed-part.desk{fill:#aa8c5b}.fixed-label{fill:#fff;font-size:13px;pointer-events:none;text-anchor:middle;paint-order:stroke;stroke:#514126;stroke-width:2}.legend{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;padding:12px 20px;background:#fff;border-top:1px solid #e7e7e7;font-size:12px}.legend span:before{content:"";display:inline-block;width:12px;height:9px;margin-right:6px}.wall-key:before{background:#302f2b}.opening-key:before{border-bottom:2px dashed #806f50}.window-key:before{background:#387389}.slider-key:before{border-block:1px dashed #4b504c;background:#a4c3c9}.fixed-key:before{background:#786443}.move-key:before{background:#c9b6a4}.legend small{color:#666;font-size:12px}.hint ul{padding-left:18px}.hint strong{color:#403529}button:disabled{opacity:.45;cursor:default}@media(max-width:700px){header{padding:0 12px}.layout{height:auto;display:flex;flex-direction:column}.stage{order:-1}.view{height:clamp(290px,65vw,510px);flex:none}aside{border-right:0;border-top:1px solid #e7e7e7}.legend{padding:8px 10px;gap:6px 12px}}
 #walls{width:auto;max-width:100%}
+.fixed-part.photo-cabinet{fill:#5b4334}.fixed-label-vertical{writing-mode:vertical-rl;dominant-baseline:middle}
 </style></head><body><header><strong>MY HOME <span style="color:#999;font-weight:400">· 家居实验室</span></strong><span class="tag">户型校对预览</span></header><div class="layout"><aside><h3>空间</h3><label>查看范围</label><select id="room" aria-label="查看范围"></select><div id="roomdims" class="hint"></div><hr class="sep"><h3>家具</h3><button class="primary" id="add" style="width:100%">＋ 添加家具</button><div id="editor"><label>选择家具</label><select id="items"></select><label>名称</label><input id="name"><div class="row"><div><label>宽 cm</label><input id="fw" type="number"></div><div><label>深 cm</label><input id="fd" type="number"></div><div><label>高 cm</label><input id="fh" type="number"></div></div><label>颜色</label><input id="color" type="color"><div class="row" style="margin-top:10px"><button id="rotate">旋转 90°</button><button id="remove">删除</button></div></div><hr class="sep"><button id="reset">恢复当前空间</button><p class="hint">活动家具尺寸单位为厘米，可在 2D 拖动。家具布局保存在当前浏览器。</p></aside><main class="stage"><div class="bar"><span style="font-weight:600;margin-right:8px">视图</span><button id="b2" class="active">2D 平面</button><button id="b3">3D 示意</button><button id="homeview">重置视角</button><select id="walls" hidden aria-label="3D 墙体显示"><option value="auto">自动剖切</option><option value="full">完整墙体</option><option value="low">低墙剖切</option></select><button id="save">保存</button><span id="status" class="dim"></span></div><div class="view"><div class="plan" id="plan"></div><div id="three"></div></div><footer class="legend" id="legend"><span class="wall-key">墙体</span><span class="opening-key">门与通道</span><span class="window-key">窗</span><span class="slider-key">推拉门 · 蓝色为玻璃</span><span class="fixed-key">定制柜 · 固定</span><span class="move-key">活动家具</span><small>推拉门为示意，门扇数量、方向及尺寸待确认</small></footer></main></div>
 <script>
 'use strict';
@@ -39,11 +40,15 @@ const plan = {
       {box:[0,0,70,180], label:'衣柜', height:250},
       {box:[70,0,83,42], label:'书桌', desk:true, height:76}
     ]},
-    {id:'hall-storage', room:'hall', name:'过道置物柜', parts:[{box:[126,103,94,47], label:'置物柜', height:230}]}
-  ],
-  pendingAssets: [
-    {room:'dining', name:'餐厅高柜', pending:'精确落位和尺寸待确认'},
-    {room:'dining', name:'入户低柜', pending:'精确落位、尺寸及是否固定待确认'}
+    {id:'hall-storage', room:'hall', name:'过道置物柜', parts:[{box:[126,103,94,47], label:'置物柜', height:230}]},
+    // Photo anchors: the low cabinet is beside the entry on the same wall;
+    // the tall cabinet ends at the inside corner beyond the studio door.
+    {id:'entry-low', room:'dining', name:'玄关矮柜', cabinet:'sideboard', facing:'up',
+      pending:'宽、深、高及离入户门偏移暂定',
+      parts:[{box:[137,301.5,190,42], label:'玄关矮柜', height:92}]},
+    {id:'dining-tall', room:'dining', name:'餐厅高柜', cabinet:'hutch', facing:'right',
+      pending:'宽、深、高及贴墙偏移暂定',
+      parts:[{box:[6.5,6.5,42,195], label:'餐厅高柜', height:249}]}
   ]
 };
 
@@ -153,9 +158,10 @@ function openingMark(w, o) {
 
 function fixedMark(asset) {
   const [ox,oy] = plan.rooms[asset.room].box;
+  const labelClass = asset.facing === 'right' ? ' fixed-label-vertical' : '';
   return `<g data-fixed="${asset.id}" transform="translate(${ox} ${oy})"><title>${asset.name} · 固定 · 尺寸暂定</title>` +
     asset.parts.map(({box:[x,y,w,h],label,desk}) =>
-      `<rect class="fixed-part${desk ? ' desk' : ''}" x="${x}" y="${y}" width="${w}" height="${h}"/><text class="fixed-label" x="${x+w/2}" y="${y+h/2+4}">${label}</text>`).join('') + '</g>';
+      `<rect class="fixed-part${desk ? ' desk' : ''}${asset.cabinet ? ' photo-cabinet' : ''}" x="${x}" y="${y}" width="${w}" height="${h}"/><text class="fixed-label${labelClass}" x="${x+w/2}" y="${y+h/2+4}">${label}</text>`).join('') + '</g>';
 }
 
 function draw() {
@@ -222,7 +228,7 @@ function sync() {
   $('roomdims').innerHTML = room
     ? `<p><strong>图纸面积 ${room.area.toFixed(1)}㎡</strong></p><p>${plan.provisional}</p>` +
       (room.photo ? `<p>照片局部测线<br>${room.photo}</p>` : '') +
-      [...plan.fixed,...plan.pendingAssets].filter(a => a.room === current)
+      plan.fixed.filter(a => a.room === current)
         .map(a => `<p>${a.name} · ${a.pending || '位置已核对，尺寸暂定'}</p>`).join('')
     : `<p>${plan.provisional}</p><p>图纸横向区段 ${plan.drawingDimensions.horizontal.bottom.map(v => (v/100).toFixed(1)).join(' / ')} m</p><p>图纸纵向区段 ${plan.drawingDimensions.vertical.map(v => (v/100).toFixed(1)).join(' / ')} m</p>`;
   $('editor').hidden = !room;
@@ -328,6 +334,73 @@ function frame3d() {
   frameKey = current;
 }
 
+// Cabinet faces are laid out in local width/depth coordinates, then turned
+// to face the dining area. Subdivisions are visual proportions from photos.
+function buildDiningCabinet(asset, [x,y], box, group) {
+  const [{box:[px,py,w,d],height}] = asset.parts;
+  const vertical = asset.facing === 'right';
+  const span = vertical ? d : w;
+  const depth = vertical ? w : d;
+  const wood = '#523828', white = '#eeeae3', dark = '#24211e', smoke = '#303536';
+  function board(u,v,width,thickness,base,top,color,opacity=1) {
+    const position = vertical
+      ? [x+px+v,y+py+span-u-width,thickness,width]
+      : [x+px+u,y+py+depth-v-thickness,width,thickness];
+    box(...position,top-base,color,base,opacity,group);
+  }
+  function doors(start, width, count, base, top) {
+    const pitch = width/count;
+    for (let i=0; i<count; i++) {
+      board(start+i*pitch+.45,depth-2,pitch-.9,2,base,top,white);
+    }
+  }
+  const short = asset.cabinet === 'sideboard';
+  const counter = short ? height-3 : height*.38;
+  const toe = short ? 13 : 4;
+  board(0,0,3,depth,0,counter,wood);
+  board(span-3,0,3,depth,0,counter,wood);
+  board(3,0,span-6,2,toe,counter,wood);
+  board(3,2,span-6,depth-4,toe,toe+3,dark);
+  board(0,0,span,depth,counter-3,counter,wood);
+  doors(3,span-6,short ? 4 : 5,toe+1,counter-4);
+  if (short) {
+    board(0,0,span,2,counter,height,wood);
+    board(0,2,3,depth-3,counter,height,wood);
+    board(span-3,2,3,depth-3,counter,height,wood);
+    return;
+  }
+
+  const glassEnd = span*.61, drawerEnd = span*.80;
+  const glassBottom = height*.69, drawersTop = height*.66;
+  board(0,0,span,2,counter,height,wood);
+  board(0,0,span,depth,height-3,height,wood);
+  for (const edge of [0,glassEnd,drawerEnd,span-3]) {
+    board(edge,2,3,depth-2,counter,height-3,wood);
+  }
+  board(3,2,glassEnd-5,depth*.72,counter+29,counter+32,wood);
+  for (const shelf of [glassBottom,glassBottom+23]) {
+    board(3,2,glassEnd-3,depth-5,shelf,shelf+2,wood);
+  }
+  const pitch = (glassEnd-3)/3;
+  for (let i=0; i<3; i++) {
+    const u = 3+i*pitch;
+    const top = height-4;
+    for (const edge of [u,u+pitch-1.4]) {
+      board(edge,depth-2,1.4,2,glassBottom,top,dark);
+    }
+    board(u,depth-2,pitch,2,glassBottom,glassBottom+1.4,dark);
+    board(u,depth-2,pitch,2,top-1.4,top,dark);
+    board(u+1.4,depth-1.5,pitch-2.8,1,glassBottom+1.4,top-1.4,smoke,.73);
+  }
+  board(glassEnd+3,2,drawerEnd-glassEnd-3,depth-4,drawersTop,drawersTop+2,wood);
+  const drawerHeight = (drawersTop-counter)/3;
+  for (let i=0; i<3; i++) {
+    const base = counter+i*drawerHeight;
+    board(glassEnd+3,depth-2,drawerEnd-glassEnd-3.5,2,base+1,base+drawerHeight-1,white);
+  }
+  doors(drawerEnd+3,span-drawerEnd-6,1,counter+1,height-4);
+}
+
 async function build3() {
   try {
     loading3d ??= initialize3d();
@@ -357,6 +430,13 @@ async function build3() {
       box(x,y,width,depth,4,'#f2f1ee',-4);
       for (const f of furniture(key)) box(x+f.x,y+f.y,f.w,f.d,f.h,f.c);
       for (const asset of plan.fixed.filter(a => a.room === key)) {
+        if (asset.cabinet) {
+          const cabinet = new three.Group();
+          cabinet.name = asset.id;
+          model.add(cabinet);
+          buildDiningCabinet(asset,[x,y],box,cabinet);
+          continue;
+        }
         for (const {box:[px,py,pw,pd],height,desk} of asset.parts) {
           const cx = x+px, cy = y+py;
           if (!desk) {
