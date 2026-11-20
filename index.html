@@ -340,18 +340,16 @@ function closestPoints(a,b) {
 function dimensionOverlay(key,item) {
   if(!item || key==='all') return '';
   const obstacles=roomObstacles(key,item.id);
-  // Show fixed cabinetry explicitly, even if another movable item is closer.
-  const fixed=obstacles.filter(o=>o.kind==='fixed');
-  const targets=fixed.length?fixed:obstacles;
-  if(!targets.length) return '';
-  const target=targets.map(o=>({...o,...closestPoints(item,o)})).sort((a,b)=>a.gap-b.gap)[0];
-  if(target.gap<0.5) return '';
   const [ox,oy]=plan.rooms[key].box;
-  const x1=ox+target.x1,y1=oy+target.y1,x2=ox+target.x2,y2=oy+target.y2;
-  const midX=(x1+x2)/2,midY=(y1+y2)/2;
-  const horizontal=Math.abs(y2-y1)<.5;
-  const lx=horizontal?midX:midX+18,ly=horizontal?midY-10:midY-6;
-  return `<g class="measurement" aria-label="与${escape(target.name)}相距 ${target.gap.toFixed(1)} 厘米"><line class="measure-line" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><circle class="measure-dot" cx="${x1}" cy="${y1}" r="3"/><circle class="measure-dot" cx="${x2}" cy="${y2}" r="3"/><text class="measure-label" x="${lx}" y="${ly}">${target.gap.toFixed(1)} cm</text></g>`;
+  return obstacles.map(target=>{
+    const {x1,y1,x2,y2,gap}=closestPoints(item,target);
+    if(gap<0.5) return '';
+    const ax=ox+x1,ay=oy+y1,bx=ox+x2,by=oy+y2;
+    const midX=(ax+bx)/2,midY=(ay+by)/2;
+    const horizontal=Math.abs(by-ay)<0.5;
+    const lx=horizontal?midX:midX+18,ly=horizontal?midY-10:midY-6;
+    return `<g class="measurement" aria-label="与${escape(target.name)}相距 ${gap.toFixed(1)} 厘米"><line class="measure-line" x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"/><circle class="measure-dot" cx="${ax}" cy="${ay}" r="3"/><circle class="measure-dot" cx="${bx}" cy="${by}" r="3"/><text class="measure-label" x="${lx}" y="${ly}">${gap.toFixed(1)} cm</text></g>`;
+  }).join('');
 }
 function segments(w) {
   const solid = [];
@@ -444,7 +442,7 @@ function draw() {
     return furniture(key).map(f => `<g class="furniture${current === key && selected === f.id ? ' selected' : ''}${collisionsByRoom[key].has(String(f.id)) ? ' collision' : ''}" data-id="${f.id}" data-owner="${key}" transform="translate(${ox+f.x} ${oy+f.y})"><rect width="${f.w}" height="${f.d}" rx="3" fill="${escape(f.c)}"/><text x="6" y="17">${escape(f.n)}</text></g>`);
   });
   $('plan').innerHTML = `<svg role="img" aria-label="住宅平面图，细部尺寸暂定" preserveAspectRatio="xMidYMid meet" viewBox="${viewX} ${viewY} ${shownW} ${shownH}">${[
-    ...fills,...labels,...movable,...plan.fixed.filter(asset => keys.includes(asset.room)).map(fixedMark),...walls,dimension
+    ...fills,...labels,...movable,...plan.fixed.filter(asset => keys.includes(asset.room)).map(fixedMark),...walls,`<g id="liveDimensions">${dimension}</g>`
   ].join('')}</svg>`;
   $('plan').querySelectorAll('[data-room]').forEach(el => {
     el.onclick = () => { if (current === 'all') selectRoom(el.dataset.room); };
@@ -467,6 +465,8 @@ function dragFurniture(event, el) {
   svg.querySelector('.furniture.selected')?.classList.remove('selected');
   el.classList.add('selected');
   $('status').textContent=`正在调整：${f.n}`;
+  const liveDimensions=svg.querySelector('#liveDimensions');
+  if(liveDimensions) liveDimensions.innerHTML=dimensionOverlay(key,f);
   el.setPointerCapture(event.pointerId);
   el.onpointermove=e=>{
     if (e.pointerId!==event.pointerId || (!moved && Math.hypot(e.clientX-event.clientX,e.clientY-event.clientY)<3)) return;
@@ -476,6 +476,7 @@ function dragFurniture(event, el) {
     next.x=snapped.x;next.y=snapped.y;
     ({x:nextX,y:nextY}=next);
     el.setAttribute('transform',`translate(${ox+nextX} ${oy+nextY})`);
+    if(liveDimensions) liveDimensions.innerHTML=dimensionOverlay(key,{...f,x:nextX,y:nextY});
     const previewConflict=roomObstacles(key,f.id).some(other=>Math.min(nextX+f.w,other.x+other.w)-Math.max(nextX,other.x)>0.5 && Math.min(nextY+f.d,other.y+other.d)-Math.max(nextY,other.y)>0.5);
     $('status').textContent=`${f.n} · X ${nextX.toFixed(1)} cm / Y ${nextY.toFixed(1)} cm${snapped.labels.length ? ' · 吸附：'+snapped.labels.join('、') : ''}${previewConflict ? ' · ⚠ 家具占地重叠' : ''}`;
   };
