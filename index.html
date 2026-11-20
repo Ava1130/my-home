@@ -174,10 +174,14 @@ summary { cursor: pointer; font-weight: 600; border-radius: 6px; }
 .backup-actions h3{margin:0;font-size:14px}
 #startupStatus:empty{display:none}
 #startupStatus{padding:8px 16px}
+#glbPreview canvas{display:block;max-width:100%;height:auto!important;border-radius:8px}
+.glb-controls{margin:8px 0}
+.glb-controls .row{margin-bottom:4px}
+#modelLoadStatus:empty{display:none}
 </style></head><body>
 <p id="startupStatus" role="alert"></p>
 <header class="app-header" inert>
-  <div class="brand"><span class="brand-mark" aria-hidden="true">⌂</span><strong>MY HOME</strong><span class="editor-version">V5.3</span></div>
+  <div class="brand"><span class="brand-mark" aria-hidden="true">⌂</span><strong>MY HOME</strong><span class="editor-version">V5.4</span></div>
   <div id="workspaceContext" class="workspace-context">全屋户型</div>
   <div class="history-actions"><button id="undo" title="Ctrl / ⌘ + Z">撤销</button><button id="redo" title="Ctrl / ⌘ + Shift + Z">重做</button></div>
   <div class="save-actions"><span id="saveStatus" class="dim" role="status"></span><button id="save">保存</button></div>
@@ -219,12 +223,12 @@ summary { cursor: pointer; font-weight: 600; border-radius: 6px; }
     <div class="view">
       <div class="plan" id="plan"></div><div id="liveMeasureReadout" class="live-measure-readout" role="status" aria-live="off" hidden></div><div id="three"></div>
     </div>
-    <footer id="legend" class="legend"><small></small><span id="status" class="dim" role="status"></span></footer>
+    <footer id="legend" class="legend"><small></small><span id="modelLoadStatus" class="dim" role="status"></span><span id="status" class="dim" role="status"></span></footer>
   </main>
   <aside class="inspector" id="inspector" aria-label="家具属性" hidden>
     <div class="inspector-heading"><h2>家具属性</h2><button id="clearSelection" type="button" aria-label="取消选中">×</button></div>
     <div id="editor">
-      <p id="furnitureModelLabel" class="asset-notice"></p>
+      <p id="furnitureModelLabel" class="asset-notice"></p><button id="retryModel" type="button" hidden>重新加载模型</button>
       <label for="name">名称</label><input id="name">
       <section id="sofaBedControls" class="sofa-bed-controls" hidden aria-label="沙发床状态">
         <label for="sofaBedState">沙发床状态</label><select id="sofaBedState"><option value="folded">收起 · 实拍</option><option value="expanded">展开 · 占地实验</option></select>
@@ -260,7 +264,20 @@ summary { cursor: pointer; font-weight: 600; border-radius: 6px; }
     <div class="inline-color"><label for="assetColor">颜色</label><input id="assetColor" type="color"></div>
     <label for="assetPhoto">照片（可选）</label><input id="assetPhoto" type="file" accept="image/jpeg,image/png,image/webp">
     <p class="asset-notice" id="assetPhotoNote"></p>
-    <p class="asset-notice">3D 使用尺寸占位模型。编辑资料只影响以后加入的实例。</p>
+    <details class="glb-controls"><summary>3D 模型（GLB）</summary>
+      <label for="glbFile">添加或替换 GLB</label><input id="glbFile" type="file" accept=".glb,model/gltf-binary">
+      <p id="glbMessage" class="asset-notice" role="status"></p>
+      <button type="button" id="retryGlbPreview">重试预览</button>
+      <button type="button" id="removeGlb">移除模型</button>
+      <div id="glbCalibration" hidden>
+        <div class="row"><div><label for="modelYaw">朝向</label><select id="modelYaw"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
+        <div><label for="modelTilt">调整竖直轴</label><select id="modelTilt"><option value="0">原始</option><option value="90">前倾 90°</option><option value="-90">后倾 90°</option><option value="180">翻转 180°</option></select></div></div>
+        <div class="row"><div><label for="modelScale">等比缩放</label><input id="modelScale" type="number" min="0.25" max="2" step="0.01" value="1"></div>
+        <div><label for="modelLift">离地 cm</label><input id="modelLift" type="number" min="0" max="200" step="0.1" value="0"></div></div>
+        <p id="modelReadout" class="asset-notice" role="status"></p><div id="glbPreview" aria-label="模型预览"></div>
+      </div>
+    </details>
+    <p class="asset-notice">模型与显示校准适用于此资产的所有实例。编辑家具尺寸只影响以后加入的实例。</p>
     <p class="asset-notice" id="assetError" role="alert"></p>
     <div class="dialog-actions"><button type="button" id="cancelAsset">取消</button><button type="submit" class="primary" id="saveAsset">保存到家具库</button></div>
   </form>
@@ -1104,8 +1121,7 @@ function sync(selectionOnly=false) {
     $(id).disabled = !f;
     $(id).value = f?.[key] ?? '';
   }
-  $('furnitureModelLabel').textContent=f?.assetId ? '尺寸占位模型 · 当前布局实例' :
-    f?.model?.startsWith('photo-') ? '实拍参考模型' : '';
+  updateModelInspector();
   $('rotate').disabled = $('remove').disabled = !f;
   $('nudge').hidden=!f;
   const conflicts=room ? furnitureCollisions(current) : new Map();
@@ -1125,6 +1141,7 @@ function sync(selectionOnly=false) {
 
 function setMode(next) {
   mode = next;
+  if(next==='2') $('modelLoadStatus').textContent='';
   $('plan').style.display = next === '2' ? 'block' : 'none';
   $('three').style.display = next === '3' ? 'block' : 'none';
   if(next==='3') $('liveMeasureReadout').hidden=true;
@@ -1153,6 +1170,7 @@ function bind3dFurnitureSelection(canvas,THREE) {
   }
   function pick() {
     const hit=ray.intersectObject(model,true).find(({object})=>{
+      if(!object.isMesh) return false;
       for (let node=object;node;node=node.parent) if (!node.visible) return false;
       return true;
     });
@@ -1279,6 +1297,19 @@ function updateFurnitureHighlight() {
     const item=group.userData.furniture;
     if (!item) continue;
     const active=item.room===current && item.id===selected;
+    if(group.userData.modelState==='ready'){
+      let outline=group.children.find(child=>child.userData.selectionOutline);
+      if(active && !outline){
+        const placeholder=group.children[0];
+        const size=new three.Vector3(...['width','height','depth'].map(key=>placeholder.geometry.parameters[key])).multiplyScalar(.5);
+        const center=placeholder.position;
+        outline=new three.Box3Helper(new three.Box3(center.clone().sub(size),center.clone().add(size)),0x587c90);
+        outline.userData.selectionOutline=true;
+        group.add(outline);
+      }
+      if(outline) outline.visible=active;
+      continue;
+    }
     for (const mesh of group.children) {
       mesh.material.emissive.set('#752e24');
       mesh.material.emissiveIntensity=active ? .24 : 0;
@@ -1901,7 +1932,7 @@ async function build3() {
     if (model) {
       scene.remove(model);
       model.traverse(node => {
-        if (!node.isMesh) return;
+        if (node.userData.importedMesh || (!node.isMesh && !node.userData.selectionOutline)) return;
         node.geometry.dispose();
         node.material.dispose();
       });
@@ -1929,7 +1960,10 @@ async function build3() {
         else if (f.model === 'photo-sofa') buildLivingSofa(f,[x,y],box,group);
         else if (f.model === 'photo-studio-sofa') buildStudioSofa(f,[x,y],box,group);
         else if (f.model === 'photo-studio-mirror') buildStudioMirror(f,[x,y],box,group);
-        else box(x+f.x,y+f.y,f.w,f.d,f.h,f.c,0,1,group);
+        else {
+          const placeholder=box(x+f.x,y+f.y,f.w,f.d,f.h,f.c,0,1,group);
+          if(f.assetId && placeholder) mountAssetModel(group,f,placeholder);
+        }
 
       }
       for (const asset of plan.fixed.filter(a => a.room === key)) {
@@ -2035,6 +2069,8 @@ async function build3() {
     restoreRoomCamera();
     updateFurnitureHighlight();
     updateWallVisibility();
+    updateModelStatus();
+    updateModelInspector();
     $('status').textContent = '3D 示意已加载';
   } catch {
     loading3d = null;
@@ -2166,8 +2202,374 @@ function assetStore(mode, operation) {
 }
 
 const thumbnailUrls=[];
+const glbLimit=12*1024*1024;
+const glbTriangleLimit=150000;
+const importedModels=new Map();
+const modelCache=new Map();
+let glbModules;
+let modelExplicitlyRemoved=false;
+let draftModel=null, failedDraft=null, draftSequence=0, draftBusy=false, previewRenderer;
+const defaultCalibration={yaw:0,tilt:0,scale:1,lift:0};
+const allowedExtensions=new Set(['KHR_materials_unlit','KHR_texture_transform','KHR_mesh_quantization',
+  'KHR_materials_clearcoat','KHR_materials_sheen','KHR_materials_specular','KHR_materials_ior',
+  'KHR_materials_transmission','KHR_materials_volume','KHR_materials_emissive_strength']);
+
+function validCalibration(value){
+  return record(value) && [0,90,180,270].includes(value.yaw) &&
+    [0,90,-90,180].includes(value.tilt) && Number.isFinite(value.scale) &&
+    value.scale>=.25 && value.scale<=2 && Number.isFinite(value.lift) && value.lift>=0 && value.lift<=200;
+}
+
+function modelModules(){
+  glbModules ??= Promise.all([
+    import('https://esm.sh/three@0.164.1'),
+    import('https://esm.sh/three@0.164.1/examples/jsm/loaders/GLTFLoader.js')
+  ]).catch(()=>{
+    glbModules=null;
+    throw new Error('3D 模型加载器不可用，请检查网络后重试。');
+  });
+  return glbModules;
+}
+
+async function glbData(file){
+  if(file.size>glbLimit) throw new Error('GLB 文件不能超过 12 MB。');
+  const buffer=await file.arrayBuffer();
+  if(buffer.byteLength<28) throw new Error('GLB 文件损坏或不完整。');
+  const view=new DataView(buffer);
+  const length=view.getUint32(12,true);
+  if(view.getUint32(0,true)!==0x46546c67 || view.getUint32(4,true)!==2 ||
+    view.getUint32(8,true)!==buffer.byteLength || view.getUint32(16,true)!==0x4e4f534a ||
+    length>buffer.byteLength-20)
+    throw new Error('文件不是完整的 GLB 2.0 模型。');
+  let json;
+  try { json=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(new Uint8Array(buffer,20,length))); }
+  catch { throw new Error('GLB 的模型清单已损坏。'); }
+  if(!record(json) || json.asset?.version!=='2.0') throw new Error('只支持 GLB 2.0 模型。');
+  if ([...(json.buffers ?? []),...(json.images ?? [])].some(entry=>Object.hasOwn(entry,'uri')))
+    throw new Error('请导入贴图与几何均内嵌的 GLB，外部资源不可用。');
+  if ([...(json.extensionsUsed ?? []),...(json.extensionsRequired ?? [])].some(ext=>!allowedExtensions.has(ext)) ||
+      json.animations?.length || json.skins?.length || json.cameras?.length)
+    throw new Error('本轮支持静态 GLB。请在导出时关闭动画、蒙皮、相机及压缩扩展。');
+  const primitives=(json.meshes ?? []).flatMap(mesh=>mesh.primitives ?? []);
+  if(!primitives.length || primitives.length>500 || (json.nodes?.length ?? 0)>500 ||
+    primitives.some(primitive=>primitive.targets?.length || ![undefined,4].includes(primitive.mode)))
+    throw new Error('GLB 需要使用静态三角网格，最多 500 个图元及节点。');
+  let triangles=0;
+  for(const primitive of primitives){
+    const count=json.accessors?.[primitive.indices ?? primitive.attributes?.POSITION]?.count;
+    const vertices=json.accessors?.[primitive.attributes?.POSITION]?.count;
+    if(!Number.isInteger(count) || !Number.isInteger(vertices) || count<3 || count%3 || vertices<3 || vertices>450000)
+      throw new Error('GLB 网格数据无效或过大。');
+    triangles+=count/3;
+  }
+  if(triangles>glbTriangleLimit) throw new Error('GLB 不能超过 15 万三角面。');
+  if((json.images?.length ?? 0)>16) throw new Error('GLB 不能超过 16 张内嵌纹理。');
+  return buffer;
+}
+
+function releaseImported(root){
+  const geometries=new Set(), materials=new Set(), textures=new Set(), images=new Set();
+  root.traverse(node=>{
+    if(node.geometry) geometries.add(node.geometry);
+    for(const material of Array.isArray(node.material) ? node.material : [node.material]){
+      if(!material) continue;
+      materials.add(material);
+      for(const value of Object.values(material)) if(value?.isTexture) textures.add(value);
+    }
+  });
+  for(const texture of textures){
+    images.add(texture.image);
+    texture.dispose();
+  }
+  images.forEach(image=>image?.close?.());
+  materials.forEach(material=>material.dispose());
+  geometries.forEach(geometry=>geometry.dispose());
+}
+
+async function parseImported(file){
+  const buffer=await glbData(file);
+  const [THREE,{GLTFLoader}]=await modelModules();
+  // Block URL resolution except the loader's own temporary Blob URLs for embedded images.
+  let textureFailed=false;
+  const manager=new THREE.LoadingManager(undefined,undefined,()=>{textureFailed=true;});
+  manager.setURLModifier(url=>{
+    if(!url.startsWith('blob:')) throw new Error('GLB 包含外部资源。');
+    return url;
+  });
+  let format;
+  try { format=await new GLTFLoader(manager).parseAsync(buffer,''); }
+  catch { throw new Error('GLB 几何或内嵌纹理加载失败，请重新导出模型后重试。'); }
+  const root=format.scene;
+  try {
+    let triangles=0;
+    const images=new Set();
+    root.traverse(node=>{
+      if(!node.isMesh) return;
+      const geometry=node.geometry;
+      triangles+=(geometry.index?.count ?? geometry.attributes.position.count)/3;
+      node.userData.importedMesh=true;
+      for(const material of Array.isArray(node.material) ? node.material : [node.material]){
+        for(const value of Object.values(material)) if(value?.isTexture) images.add(value.image);
+      }
+    });
+    const declaredTextures=format.parser.json.textures?.length ?? 0;
+    if(textureFailed || (declaredTextures && !images.size)) throw new Error('GLB 的内嵌纹理加载失败。');
+    if(triangles>glbTriangleLimit) throw new Error('GLB 实例合计不能超过 15 万三角面。');
+    let pixels=0;
+    for(const image of images){
+      if(!image?.width || !image?.height || Math.max(image.width,image.height)>2048)
+        throw new Error('GLB 纹理每边不能超过 2048 像素。');
+      pixels+=image.width*image.height;
+    }
+    if(pixels>8*1024*1024) throw new Error('GLB 纹理合计不能超过约 840 万像素。');
+    const sizes=[];
+    // Calculate exact bounds once for each supported orientation, in model units.
+    for(const tilt of [0,90,-90,180]){
+      const pivot=new THREE.Group();
+      pivot.rotation.x=tilt*Math.PI/180;
+      pivot.add(root);
+      const bounds=new THREE.Box3().setFromObject(pivot,true);
+      const extent=bounds.getSize(new THREE.Vector3());
+      if(!extent.toArray().every(value=>Number.isFinite(value) && value>1e-7 && value<1e7))
+        throw new Error('GLB 缺少有效的三维包围盒。');
+      sizes.push([tilt,bounds]);
+      pivot.remove(root);
+    }
+    return {THREE,root,bounds:new Map(sizes),triangles};
+  } catch(error){
+    releaseImported(root);
+    throw error;
+  }
+}
+
+function fittedModel(resource,calibration,target,turns=0){
+  const {THREE,root}=resource;
+  const bounds=resource.bounds.get(calibration.tilt);
+  const raw=bounds.getSize(new THREE.Vector3());
+  const yaw=(calibration.yaw/90+turns)%4;
+  const odd=yaw%2;
+  const oriented=odd ? [raw.z,raw.y,raw.x] : [raw.x,raw.y,raw.z];
+  const ratios=target.map((dimension,index)=>dimension/oriented[index]);
+  const factor=Math.min(...ratios)*calibration.scale;
+  const center=bounds.getCenter(new THREE.Vector3());
+  const mount=new THREE.Group();
+  mount.rotation.y=-yaw*Math.PI/2;
+  mount.scale.setScalar(factor);
+  const pivot=new THREE.Group();
+  pivot.rotation.x=calibration.tilt*Math.PI/180;
+  pivot.position.set(-center.x,-bounds.min.y,-center.z);
+  pivot.add(root.clone(true));
+  mount.add(pivot);
+  mount.position.y=calibration.lift/100;
+  mount.userData.importedMount=true;
+  return {mount,shown:oriented.map(value=>value*factor),
+    warning:Math.max(...ratios)/Math.min(...ratios)>1.15 || calibration.scale!==1 || calibration.lift!==0};
+}
+
+const dimensionsText=values=>[values[0],values[2],values[1]].map(value=>+(value*100).toPrecision(4)).join(' × ');
+
+function releaseCacheEntry(id,entry){
+  modelCache.delete(id);
+  entry.promise.then(resource=>releaseImported(resource.root),()=>{});
+}
+
+function cachedModel(id,descriptor){
+  let entry=modelCache.get(id);
+  if(!entry){
+    entry={revision:descriptor.revision,promise:parseImported(descriptor.file)};
+    modelCache.set(id,entry);
+  }else{
+    modelCache.delete(id);
+    modelCache.set(id,entry);
+  }
+  return entry;
+}
+
+function updateModelInspector(){
+  const f=selectedItem();
+  const custom=f?.assetId && importedModels.get(f.assetId);
+  const group=model?.children.find(group=>group.userData.furniture?.room===current && group.userData.furniture?.id===f?.id);
+  const state=custom && mode==='3' ? group?.userData.modelState : null;
+  $('retryModel').hidden=state!=='failed';
+  $('furnitureModelLabel').textContent=custom ? ({
+    loading:'GLB 加载中 · 暂显示尺寸占位',
+    failed:'GLB 加载失败 · 暂显示尺寸占位',
+    ready:group?.userData.modelLabel
+  }[state] || 'GLB 模型 · 3D 中显示；2D 使用家具尺寸') :
+    f?.assetId ? '尺寸占位模型 · 当前布局实例' : f?.model?.startsWith('photo-') ? '实拍参考模型' : '';
+}
+
+function mountAssetModel(group,item,placeholder){
+  const descriptor=importedModels.get(item.assetId);
+  if(!descriptor) return;
+  group.userData.modelState='loading';
+  group.userData.modelAssetId=item.assetId;
+  const entry=cachedModel(item.assetId,descriptor);
+  function isCurrent(){return group.parent===model && mode==='3' && modelCache.get(item.assetId)===entry;}
+  entry.promise.then(resource=>{
+    if(!isCurrent()) return;
+    const fitted=fittedModel(resource,descriptor.calibration,[item.w/100,item.h/100,item.d/100],item.turns || 0);
+    fitted.mount.position.x=placeholder.position.x;
+    fitted.mount.position.z=placeholder.position.z;
+    group.add(fitted.mount);
+    placeholder.visible=false;
+    group.userData.modelState='ready';
+    group.userData.modelLabel='GLB 显示 '+dimensionsText(fitted.shown)+' cm'+
+      (fitted.warning ? ' · 与家具尺寸或地面基准有偏差，2D 使用家具尺寸' : '');
+    updateFurnitureHighlight();
+    updateModelInspector();
+    updateModelStatus();
+  }).catch(()=>{
+    if(!isCurrent()) return;
+    group.userData.modelState='failed';
+    updateModelInspector();
+    updateModelStatus();
+  });
+}
+
+function updateModelStatus(){
+  const groups=model.children;
+  $('modelLoadStatus').textContent=groups.some(g=>g.userData.modelState==='failed') ? '部分 GLB 加载失败 · 选中后可重试' :
+    groups.some(g=>g.userData.modelState==='loading') ? '正在加载家具 GLB…' : '';
+  const inUse=new Set(groups.map(group=>group.userData.modelAssetId));
+  for(const [id,entry] of modelCache){
+    if(modelCache.size<=4) break;
+    if(!inUse.has(id)) releaseCacheEntry(id,entry);
+  }
+}
+
+$('retryModel').onclick=()=>{
+  const id=selectedItem()?.assetId, entry=modelCache.get(id);
+  if(entry) releaseCacheEntry(id,entry);
+  if(mode==='3') build3();
+};
+
+function clearModelPreview(){
+  if(!previewRenderer) return;
+  previewRenderer.dispose();
+  previewRenderer.forceContextLoss();
+  previewRenderer=null;
+  $('glbPreview').replaceChildren();
+}
+
+function draftCalibration(){
+  return {yaw:Number($('modelYaw').value),tilt:Number($('modelTilt').value),
+    scale:$('modelScale').valueAsNumber,lift:$('modelLift').valueAsNumber};
+}
+
+function showModelPreview(){
+  $('glbCalibration').hidden=!draftModel;
+  if(!draftModel) return;
+  const {resource}=draftModel;
+  const {THREE}=resource;
+  const calibration=draftCalibration();
+  const target=['Width','Height','Depth'].map(field=>$('asset'+field).valueAsNumber/100);
+  if(!validCalibration(calibration) || !target.every(positive)){
+    $('modelReadout').textContent='请填写有效的目标宽、深、高及校准参数。';
+    return;
+  }
+  const fitted=fittedModel(resource,calibration,target);
+  const original=resource.bounds.get(0).getSize(new THREE.Vector3());
+  $('modelReadout').textContent='原始包围盒（GLB 单位） '+[original.x,original.z,original.y].map(value=>+value.toPrecision(4)).join(' × ')+
+    ' ｜目标 '+dimensionsText(target)+' cm ｜显示 '+dimensionsText(fitted.shown)+' cm'+
+    (fitted.warning ? '。显示比例或离地与目标有偏差，2D 仍使用目标尺寸。' : '。');
+  try {
+    previewRenderer ??= new THREE.WebGLRenderer({antialias:true});
+    const width=Math.max(200,$('glbPreview').clientWidth);
+    previewRenderer.setSize(width,160);
+    previewRenderer.setPixelRatio(Math.min(devicePixelRatio || 1,1.5));
+    previewRenderer.outputColorSpace=THREE.SRGBColorSpace;
+    previewRenderer.toneMapping=THREE.ACESFilmicToneMapping;
+    const previewScene=new THREE.Scene();
+    previewScene.background=new THREE.Color('#f6f6f6');
+    previewScene.add(fitted.mount,new THREE.HemisphereLight(0xffffff,0xa9a9a9,2));
+    const light=new THREE.DirectionalLight(0xffffff,2.2);
+    light.position.set(3,5,4);
+    previewScene.add(light);
+    const span=Math.max(...fitted.shown,...target,calibration.lift/100);
+    const eye=new THREE.PerspectiveCamera(36,width/160,.001,Math.max(50,span*12));
+    eye.position.set(span*1.8,span*1.4+fitted.mount.position.y,span*2.1);
+    eye.lookAt(0,fitted.mount.position.y+fitted.shown[1]/2,0);
+    $('glbPreview').append(previewRenderer.domElement);
+    previewRenderer.render(previewScene,eye);
+  } catch {
+    $('glbMessage').textContent='当前浏览器无法渲染 3D 预览，可以重试。';
+    clearModelPreview();
+  }
+}
+
+function clearDraftModel(){
+  ++draftSequence;
+  clearModelPreview();
+  if(draftModel) releaseImported(draftModel.resource.root);
+  draftModel=null;
+  failedDraft=null;
+  draftBusy=false;
+  $('glbCalibration').hidden=true;
+  $('saveAsset').disabled=false;
+}
+
+async function loadDraftModel(descriptor){
+  const request=++draftSequence;
+  failedDraft=null;
+  draftBusy=$('saveAsset').disabled=true;
+  $('glbMessage').textContent='正在校验并加载 GLB…';
+  try {
+    const resource=await parseImported(descriptor.file);
+    if(request!==draftSequence){releaseImported(resource.root);return;}
+    clearModelPreview();
+    if(draftModel) releaseImported(draftModel.resource.root);
+    draftModel={descriptor,resource};
+    const {yaw,tilt,scale,lift}=descriptor.calibration;
+    $('modelYaw').value=yaw; $('modelTilt').value=tilt;
+    $('modelScale').value=scale; $('modelLift').value=lift;
+    $('glbMessage').textContent=descriptor.name+' · '+resource.triangles.toLocaleString()+' 三角面';
+    showModelPreview();
+  } catch(error){
+    if(request===draftSequence){
+      failedDraft=descriptor;
+      $('glbMessage').textContent=(error?.message || 'GLB 无法读取。')+
+        (draftModel ? ' 仍保留上一个已加载的模型。' : '');
+    }
+  } finally {
+    if(request===draftSequence) draftBusy=$('saveAsset').disabled=false;
+  }
+}
+
+$('glbFile').onchange=event=>{
+  const file=event.target.files[0];
+  event.target.value='';
+  if(!file) return;
+  if(!/\.glb$/i.test(file.name)){
+    $('glbMessage').textContent='请选择 .glb 格式的文件。';
+    return;
+  }
+  loadDraftModel({file,name:file.name,revision:crypto.randomUUID(),calibration:defaultCalibration});
+};
+$('removeGlb').onclick=()=>{
+  clearDraftModel();
+  modelExplicitlyRemoved=true;
+  $('glbMessage').textContent='保存后，此资产的摆放实例将使用尺寸占位模型。';
+};
+$('retryGlbPreview').onclick=()=>{
+  if(failedDraft) loadDraftModel(failedDraft);
+  else if(draftModel) showModelPreview();
+  else if(editingAsset?.glb && !modelExplicitlyRemoved) loadDraftModel(editingAsset.glb);
+  else $('glbFile').click();
+};
+for(const id of ['modelYaw','modelTilt','modelScale','modelLift','assetWidth','assetDepth','assetHeight'])
+  $(id).addEventListener('change',showModelPreview);
+$('assetDialog').addEventListener('close',clearDraftModel);
+
 async function showAssets() {
   const assets=await assetStore('readonly',store=>store.getAll());
+  importedModels.clear();
+  for(const asset of assets) if(asset.glb) importedModels.set(asset.id,asset.glb);
+  const obsolete=[...modelCache].filter(([id,entry])=>importedModels.get(id)?.revision!==entry.revision);
+  for(const [id] of obsolete) modelCache.delete(id);
+  if(mode==='3') await build3();
+  for(const [,entry] of obsolete) entry.promise.then(resource=>releaseImported(resource.root),()=>{});
+  updateModelInspector();
   thumbnailUrls.splice(0).forEach(url=>URL.revokeObjectURL(url));
   $('assetList').replaceChildren(...assets.map(asset=>{
     const card=document.createElement('article');
@@ -2191,7 +2593,7 @@ async function showAssets() {
     const size=document.createElement('small');
     size.textContent=`${asset.width} × ${asset.depth} × ${asset.height} cm`;
     const labels=document.createElement('small');
-    labels.textContent=`${asset.category} · ${asset.purchase} · 尺寸占位`;
+    labels.textContent=`${asset.category} · ${asset.purchase} · ${asset.glb ? 'GLB 模型' : '尺寸占位'}`;
     info.append(name,size,labels);
     const actions=document.createElement('div');
     actions.className='asset-actions';
@@ -2239,7 +2641,12 @@ function openAssetEditor(asset=null) {
   $('assetTitle').textContent=asset ? '编辑家具' : '添加家具';
   $('assetPhotoNote').textContent=asset?.photo ? '已保存照片。选择新文件可替换。' : 'JPG、PNG 或 WebP，最多 20 MB。';
   $('assetError').textContent='';
+  clearDraftModel();
+  modelExplicitlyRemoved=false;
+  $('glbMessage').textContent='仅限自包含静态 GLB，最多 12 MB。';
+  $('glbFile').closest('details').open=Boolean(asset?.glb);
   $('assetDialog').showModal();
+  if(asset?.glb) loadDraftModel(asset.glb);
 }
 
 async function thumbnail(file) {
@@ -2279,7 +2686,7 @@ $('assetForm').onsubmit=async event=>{
   }
   const saveButton=$('saveAsset');
   const cancelButton=$('cancelAsset');
-  if(saveButton.disabled) return;
+  if(saveButton.disabled || draftBusy) return;
   saveButton.disabled=cancelButton.disabled=true;
   $('assetError').textContent='';
   const asset={id:editingAsset?.id ?? 'asset-'+crypto.randomUUID(),name,
@@ -2289,6 +2696,13 @@ $('assetForm').onsubmit=async event=>{
     photo:editingAsset?.photo ?? null};
   try {
     const file=$('assetPhoto').files[0];
+    if(draftModel){
+      const calibration=draftCalibration();
+      if(!validCalibration(calibration)) throw new Error('请核对模型校准参数。');
+      asset.glb={...draftModel.descriptor,calibration};
+    }else if(editingAsset?.glb && !modelExplicitlyRemoved){
+      asset.glb=editingAsset.glb;
+    }
     if(file) asset.photo=await thumbnail(file);
     try {
       await assetStore('readwrite',store=>store.put(asset));
@@ -2329,6 +2743,8 @@ function validateBackup(layouts,assets) {
       throw new Error('家具资产资料缺失、重复或格式错误。');
     if(asset.photo!==null && (!(asset.photo instanceof Blob) || !imageTypes.includes(asset.photo.type) || !asset.photo.size))
       throw new Error('家具照片缺失或格式不受支持。');
+    if(Object.hasOwn(asset,'glb') && !validModelDescriptor(asset.glb))
+      throw new Error('家具 GLB 文件或校准资料缺失。');
     ids.add(asset.id);
   }
 
@@ -2409,25 +2825,55 @@ async function checkPhoto(photo) {
   }
 }
 
+function validModelDescriptor(glb){
+  return record(glb) && glb.file instanceof Blob && glb.file.size>0 && glb.file.size<=glbLimit &&
+    typeof glb.name==='string' && /\.glb$/i.test(glb.name) && typeof glb.revision==='string' &&
+    validId(glb.revision) && validCalibration(glb.calibration);
+}
+
+async function blobBase64(blob){
+  const bytes=new Uint8Array(await blob.arrayBuffer());
+  let binary='';
+  for(let start=0;start<bytes.length;start+=8192)
+    binary+=String.fromCharCode(...bytes.subarray(start,start+8192));
+  return btoa(binary);
+}
+
+function backupBlob(bytes,type,description){
+  if(typeof bytes!=='string' || !bytes) throw new Error(description+'缺失。');
+  try { return new Blob([Uint8Array.from(atob(bytes),char=>char.charCodeAt(0))],{type}); }
+  catch { throw new Error(description+'编码损坏。'); }
+}
+
+async function checkBackupModel(glb){
+  if(!validModelDescriptor(glb)) throw new Error('备份的 GLB 文件或校准资料无效。');
+  const resource=await parseImported(glb.file);
+  releaseImported(resource.root);
+}
+
 async function encodeBackup(snapshot){
   validateBackup(snapshot.layouts,snapshot.assets);
-  const photos={};
+  const photos={},models={};
   const assets=[];
   let total=0;
-  for(const {photo,...asset} of snapshot.assets){
-    const photoId=photo ? 'photo-'+assets.length : null;
-    assets.push({...asset,photoId});
-    if(!photo) continue;
-    total+=photo.size;
-    if(total>backupLimit*.6) throw new Error('照片总量过大，无法生成 64 MB 以内的备份。');
-    await checkPhoto(photo);
-    const bytes=new Uint8Array(await photo.arrayBuffer());
-    let binary='';
-    for(let start=0;start<bytes.length;start+=8192) binary+=String.fromCharCode(...bytes.subarray(start,start+8192));
-    photos[photoId]={type:photo.type,bytes:btoa(binary)};
+  for(const {photo,glb,...asset} of snapshot.assets){
+    const index=assets.length;
+    const photoId=photo ? 'photo-'+index : null, modelId=glb ? 'model-'+index : null;
+    assets.push({...asset,photoId,modelId});
+    total+=(photo?.size ?? 0)+(glb?.file.size ?? 0);
+    if(total>backupLimit*.70) throw new Error('照片与模型合计过大，无法生成 64 MB 以内的备份。');
+    if(photo){
+      await checkPhoto(photo);
+      photos[photoId]={type:photo.type,bytes:await blobBase64(photo)};
+    }
+    if(glb){
+      await checkBackupModel(glb);
+      const {file,...metadata}=glb;
+      models[modelId]={...metadata,bytes:await blobBase64(file)};
+    }
   }
-  const payload=JSON.stringify({createdAt:new Date().toISOString(),layouts:snapshot.layouts,assets,photos});
-  const file=new Blob([JSON.stringify({format:backupFormat,version:1,sha256:await checksum(payload),payload})],
+  const payload=JSON.stringify({createdAt:new Date().toISOString(),layouts:snapshot.layouts,assets,photos,models});
+  const file=new Blob([JSON.stringify({format:backupFormat,version:2,sha256:await checksum(payload),payload})],
     {type:'application/json'});
   if(file.size>backupLimit) throw new Error('备份超过 64 MB。');
   return file;
@@ -2438,34 +2884,42 @@ async function decodeBackup(file){
   let envelope;
   try { envelope=JSON.parse(await file.text()); }
   catch { throw new Error('文件损坏，或不是 MY HOME 备份。'); }
-  if(envelope?.format!==backupFormat || envelope.version!==1)
+  if(envelope?.format!==backupFormat || ![1,2].includes(envelope.version))
     throw new Error('不支持的备份格式或版本。');
   if(typeof envelope.payload!=='string' || envelope.sha256!==await checksum(envelope.payload))
     throw new Error('备份校验失败，文件可能已损坏。');
   const body=JSON.parse(envelope.payload);
-  if(!record(body) || !Array.isArray(body.assets) || !record(body.photos) || !Number.isFinite(Date.parse(body.createdAt)))
+  if(!record(body) || !Array.isArray(body.assets) || !record(body.photos) ||
+      (envelope.version===2 && !record(body.models)) || !Number.isFinite(Date.parse(body.createdAt)))
     throw new Error('备份清单不完整。');
-  const used=new Set();
+  const usedPhotos=new Set(),usedModels=new Set();
   const assets=[];
+  function resourceAt(resources,id,used,description){
+    if(typeof id!=='string' || used.has(id) || !Object.hasOwn(resources,id) || !record(resources[id]))
+      throw new Error('备份缺少'+description+'，或清单有误。');
+    used.add(id);
+    return resources[id];
+  }
   for(const entry of body.assets){
-    if(!record(entry)) throw new Error('备份中的家具资料无效。');
-    const {photoId,...asset}=entry;
+    if(!record(entry) || Object.hasOwn(entry,'glb')) throw new Error('备份中的家具资料无效。');
+    const {photoId,modelId,...asset}=entry;
     let photo=null;
     if(photoId!==null){
-      const source=Object.hasOwn(body.photos,photoId) && body.photos[photoId];
-      if(typeof photoId!=='string' || used.has(photoId) || !record(source) ||
-        !imageTypes.includes(source.type) || typeof source.bytes!=='string' || !source.bytes)
-        throw new Error('备份缺少家具照片，或照片清单有误。');
-      let bytes;
-      try { bytes=Uint8Array.from(atob(source.bytes),char=>char.charCodeAt(0)); }
-      catch { throw new Error('家具照片编码损坏。'); }
-      photo=new Blob([bytes],{type:source.type});
+      const source=resourceAt(body.photos,photoId,usedPhotos,'家具照片');
+      if(!imageTypes.includes(source.type)) throw new Error('家具照片格式不受支持。');
+      photo=backupBlob(source.bytes,source.type,'家具照片');
       await checkPhoto(photo);
-      used.add(photoId);
+    }
+    if(envelope.version===2 && modelId!==null){
+      const {bytes,...metadata}=resourceAt(body.models,modelId,usedModels,'家具 GLB');
+      asset.glb={...metadata,file:backupBlob(bytes,'model/gltf-binary','家具 GLB')};
+      await checkBackupModel(asset.glb);
     }
     assets.push({...asset,photo});
   }
-  if(used.size!==Object.keys(body.photos).length) throw new Error('备份照片与资产清单不一致。');
+  if(usedPhotos.size!==Object.keys(body.photos).length ||
+      (envelope.version===2 && usedModels.size!==Object.keys(body.models).length))
+    throw new Error('备份资源与资产清单不一致。');
   validateBackup(body.layouts,assets);
   return {layouts:body.layouts,assets};
 }
@@ -2548,7 +3002,7 @@ $('backupFile').onchange=event=>{
     const rooms=Object.values(pendingImport.layouts.rooms);
     const variants=rooms.flatMap(room=>Object.values(room.variants));
     const assets=pendingImport.assets;
-    $('restoreSummary').textContent=`${rooms.length} 个房间、${variants.length} 个方案、${variants.flat().length} 件摆放实例、${assets.length} 项家具资产、${assets.filter(asset=>asset.photo).length} 张照片。`;
+    $('restoreSummary').textContent=`${rooms.length} 个房间、${variants.length} 个方案、${variants.flat().length} 件摆放实例、${assets.length} 项家具资产、${assets.filter(asset=>asset.photo).length} 张照片、${assets.filter(asset=>asset.glb).length} 个 GLB 模型。`;
     $('restoreStatus').textContent='';
     $('backupStatus').textContent='文件校验已通过，等待确认。';
     $('restoreDialog').showModal();
@@ -2693,7 +3147,7 @@ $('rotate').onclick = () => {
   }
   applyEdit(()=>{
     [f.w,f.d]=[f.d,f.w];
-    if (f.model?.startsWith('photo-')) f.turns=((f.turns || 0)+1)%4;
+    if (f.assetId || f.model?.startsWith('photo-')) f.turns=((f.turns || 0)+1)%4;
     setPosition(f,current,f.x,f.y);
   },'已旋转 90° · 可撤销');
 };
