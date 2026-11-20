@@ -397,6 +397,7 @@ function dragFurniture(event, el) {
 }
 
 function selectRoom(key, id = null) {
+  if(current!==key) planZoom=1;
   current = key;
   selected = id;
   $('room').value = key;
