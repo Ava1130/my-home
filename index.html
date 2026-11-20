@@ -340,7 +340,7 @@ function closestPoints(a,b) {
 function updateMeasureReadout(key,item) {
   const panel=$('liveMeasureReadout');
   if(!item || key==='all' || mode!=='2') {panel.hidden=true;return;}
-  const targets=roomObstacles(key,item.id).map(o=>({name:o.name,gap:rectangleGap(item,o)}));
+  const targets=roomObstacles(key,item.id).map(o=>({name:o.name,gap:rectangleGap(item,o)})).sort((a,b)=>a.gap-b.gap);
   panel.hidden=targets.length===0;
   panel.replaceChildren();
   if(!targets.length) return;
@@ -349,7 +349,7 @@ function updateMeasureReadout(key,item) {
   panel.appendChild(heading);
   targets.forEach(t=>{
     const line=document.createElement('span');
-    line.textContent=t.name+'：'+t.gap.toFixed(1)+' cm';
+    line.textContent=t.name+'：'+(t.gap<0.5?'接触 / 重叠':t.gap.toFixed(1)+' cm');
     panel.appendChild(line);
   });
 }
@@ -357,15 +357,23 @@ function dimensionOverlay(key,item) {
   if(!item || key==='all') return '';
   const obstacles=roomObstacles(key,item.id);
   const [ox,oy]=plan.rooms[key].box;
-  return obstacles.map(target=>{
-    const {x1,y1,x2,y2,gap}=closestPoints(item,target);
-    if(gap<0.5) return '';
-    const ax=ox+x1,ay=oy+y1,bx=ox+x2,by=oy+y2;
-    const midX=(ax+bx)/2,midY=(ay+by)/2;
-    const horizontal=Math.abs(by-ay)<0.5;
-    const lx=horizontal?midX:midX+18,ly=horizontal?midY-10:midY-6;
-    return `<g class="measurement" aria-label="与${escape(target.name)}相距 ${gap.toFixed(1)} 厘米"><line class="measure-line" x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"/><circle class="measure-dot" cx="${ax}" cy="${ay}" r="3"/><circle class="measure-dot" cx="${bx}" cy="${by}" r="3"/><text class="measure-label" x="${lx}" y="${ly}">${gap.toFixed(1)} cm</text></g>`;
-  }).join('');
+  const labels=[];
+  return obstacles.map(target=>({...target,...closestPoints(item,target)}))
+    .filter(target=>target.gap>=0.5)
+    .sort((a,b)=>a.gap-b.gap)
+    .map(target=>{
+      const {x1,y1,x2,y2,gap}=target;
+      const ax=ox+x1,ay=oy+y1,bx=ox+x2,by=oy+y2;
+      const midX=(ax+bx)/2,midY=(ay+by)/2;
+      const horizontal=Math.abs(by-ay)<0.5;
+      const lx=horizontal?midX:midX+18,ly=horizontal?midY-10:midY-6;
+      const labelText=gap.toFixed(1)+' cm';
+      const halfWidth=labelText.length*4.5+7;
+      const proposed={left:lx-halfWidth,right:lx+halfWidth,top:ly-16,bottom:ly+4};
+      const overlapping=labels.some(box=>!(proposed.right<box.left || proposed.left>box.right || proposed.bottom<box.top || proposed.top>box.bottom));
+      if(!overlapping) labels.push(proposed);
+      return `<g class="measurement" aria-label="与${escape(target.name)}相距 ${gap.toFixed(1)} 厘米"><line class="measure-line" x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"/><circle class="measure-dot" cx="${ax}" cy="${ay}" r="3"/><circle class="measure-dot" cx="${bx}" cy="${by}" r="3"/>${overlapping?'':`<text class="measure-label" x="${lx}" y="${ly}">${labelText}</text>`}</g>`;
+    }).join('');
 }
 function segments(w) {
   const solid = [];
