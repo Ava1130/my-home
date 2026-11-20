@@ -3,8 +3,8 @@
 .stage{background:#f6f3ed}.plan{width:100%;height:100%;min-width:0;min-height:0;padding:clamp(12px,2vw,24px);overflow:hidden;}.room{stroke:none;fill:#eee5d4}.room[data-room="bath"],.room[data-room="kitchen"],.room[data-room="balcony"]{fill:#e3ebea}.room[data-room="living"],.room[data-room="dining"],.room[data-room="hall"]{fill:#f5ecd9}.room:hover{fill:#e6dac5}.room.active{cursor:default}.roomname{font-weight:600;font-size:22px}.area{font-size:17px}.wall-segment{stroke:#302f2b;stroke-width:13;stroke-linecap:square;pointer-events:none}.opening-line{stroke:#387389;stroke-width:3;fill:none;pointer-events:none}.slider-track{stroke:#4b504c;stroke-width:1.5;stroke-dasharray:6 3}.slider-panel{stroke:#81734f;stroke-width:6}.slider-panel.glass{stroke:#75acc2;stroke-width:6}.passage-line{stroke:#806f50;stroke-width:2;stroke-dasharray:8 6;pointer-events:none}.door-leaf{stroke:#806f50;stroke-width:2.5;fill:none;pointer-events:none}.fixed-part{fill:#786443;stroke:#514126;stroke-width:1.5}.fixed-part.desk{fill:#aa8c5b}.fixed-label{fill:#fff;font-size:13px;pointer-events:none;text-anchor:middle;paint-order:stroke;stroke:#514126;stroke-width:2}.legend{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;padding:12px 20px;background:#fff;border-top:1px solid #e7e7e7;font-size:12px}.legend span:before{content:"";display:inline-block;width:12px;height:9px;margin-right:6px}.wall-key:before{background:#302f2b}.opening-key:before{border-bottom:2px dashed #806f50}.window-key:before{background:#387389}.slider-key:before{border-block:1px dashed #4b504c;background:#a4c3c9}.fixed-key:before{background:#786443}.move-key:before{background:#c9b6a4}.legend small{color:#666;font-size:12px}.hint ul{padding-left:18px}.hint strong{color:#403529}button:disabled{opacity:.45;cursor:default}@media(max-width:700px){header{padding:0 12px}.layout{height:auto;display:flex;flex-direction:column}.stage{order:-1}.view{height:clamp(290px,65vw,510px);flex:none}aside{border-right:0;border-top:1px solid #e7e7e7}.legend{padding:8px 10px;gap:6px 12px}}
 #walls,#kitchenslide{width:auto;max-width:100%}
 .fixed-part.photo-cabinet{fill:#5b4334}.fixed-label-vertical{writing-mode:vertical-rl;dominant-baseline:middle}
-#zoomvalue{min-width:42px;text-align:center;font-variant-numeric:tabular-nums}#zoomin,#zoomout{min-width:38px}#copyScheme{margin-top:8px}.furniture.selected rect{stroke:#b32630;stroke-width:3} #saveStatus[data-failed]{color:#a5212a;font-weight:600}
-</style></head><body><header><strong>MY HOME <span style="color:#999;font-weight:400">· 家居实验室</span></strong><span class="tag">户型校对预览</span></header><div class="layout"><aside><h3>空间</h3><label>查看范围</label><select id="room" aria-label="查看范围"></select><div id="roomdims" class="hint"></div><section id="schemes" hidden><label for="scheme">布局方案</label><select id="scheme"></select><button id="copyScheme" type="button">复制当前方案</button></section><hr class="sep"><h3>家具</h3><button class="primary" id="add" style="width:100%">＋ 添加家具</button><button id="addReferenceBed" hidden>加入实拍床</button><div id="editor"><label>选择家具</label><select id="items"></select><label>名称</label><input id="name"><div class="row"><div><label>宽 cm</label><input id="fw" type="number"></div><div><label>深 cm</label><input id="fd" type="number"></div><div><label>高 cm</label><input id="fh" type="number"></div></div><div class="row"><div><label for="fx">位置 X cm</label><input id="fx" type="number" min="0" step="0.1"></div><div><label for="fy">位置 Y cm</label><input id="fy" type="number" min="0" step="0.1"></div></div><label>颜色</label><input id="color" type="color"><div class="row" style="margin-top:10px"><button id="rotate">旋转 90°</button><button id="remove">删除</button></div></div><hr class="sep"><button id="reset">恢复当前空间</button><p class="hint">活动家具尺寸单位为厘米，可在 2D 拖动。家具布局保存在当前浏览器。</p></aside><main class="stage"><div class="bar"><span style="font-weight:600;margin-right:8px">视图</span><button id="b2" class="active">2D 平面</button><button id="b3">3D 示意</button><button id="homeview">重置视角</button><button id="zoomout" title="缩小 2D 平面图" aria-label="缩小平面图">−</button><span id="zoomvalue" class="dim" aria-live="polite">100%</span><button id="zoomin" title="放大 2D 平面图" aria-label="放大平面图">＋</button><select id="walls" hidden aria-label="3D 墙体显示"><option value="auto">自动剖切</option><option value="full">完整墙体</option><option value="low">低墙剖切</option></select><button id="kitchenfront" hidden>厨房门正视</button><select id="kitchenslide" hidden aria-label="厨房门滑动示意"><option value="0">向左 · 实拍状态</option><option value="0.5">居中 · 示意</option><option value="1">向右 · 示意</option></select><button id="undo" title="Ctrl / ⌘ + Z">撤销</button><button id="redo" title="Ctrl / ⌘ + Shift + Z">重做</button><button id="save">保存</button><span id="saveStatus" class="dim" role="status"></span><span id="status" class="dim"></span></div><div class="view"><div class="plan" id="plan"></div><div id="three"></div></div><footer class="legend" id="legend"><span class="wall-key">墙体</span><span class="opening-key">门与通道</span><span class="window-key">窗</span><span class="slider-key">推拉门 · 蓝色为玻璃</span><span class="fixed-key">定制柜 · 固定</span><span class="move-key">活动家具</span><small>推拉门为示意，门扇数量、方向及尺寸待确认</small></footer></main></div>
+.nudge{margin:14px 0 8px}.nudge-grid{display:flex;gap:6px;margin:8px 0}.nudge-grid button{flex:1;min-width:0;padding:8px 4px}.nudge-grid button:focus-visible{outline:2px solid #e60012;outline-offset:2px}#zoomvalue{min-width:42px;text-align:center;font-variant-numeric:tabular-nums}#zoomin,#zoomout{min-width:38px}#copyScheme{margin-top:8px}.furniture.selected rect{stroke:#b32630;stroke-width:3} #saveStatus[data-failed]{color:#a5212a;font-weight:600}
+</style></head><body><header><strong>MY HOME <span style="color:#999;font-weight:400">· 家居实验室</span></strong><span class="tag">户型校对预览</span></header><div class="layout"><aside><h3>空间</h3><label>查看范围</label><select id="room" aria-label="查看范围"></select><div id="roomdims" class="hint"></div><section id="schemes" hidden><label for="scheme">布局方案</label><select id="scheme"></select><button id="copyScheme" type="button">复制当前方案</button></section><hr class="sep"><h3>家具</h3><button class="primary" id="add" style="width:100%">＋ 添加家具</button><button id="addReferenceBed" hidden>加入实拍床</button><div id="editor"><label>选择家具</label><select id="items"></select><label>名称</label><input id="name"><div class="row"><div><label>宽 cm</label><input id="fw" type="number"></div><div><label>深 cm</label><input id="fd" type="number"></div><div><label>高 cm</label><input id="fh" type="number"></div></div><div class="row"><div><label for="fx">位置 X cm</label><input id="fx" type="number" min="0" step="0.1"></div><div><label for="fy">位置 Y cm</label><input id="fy" type="number" min="0" step="0.1"></div></div><div id="nudge" class="nudge"><span class="dim">位置微调</span><div class="nudge-grid"><button type="button" data-nudge="0,-1" aria-label="上移家具">↑</button><button type="button" data-nudge="-1,0" aria-label="左移家具">←</button><button type="button" data-nudge="0,1" aria-label="下移家具">↓</button><button type="button" data-nudge="1,0" aria-label="右移家具">→</button></div><span id="nudgeStatus" class="dim" role="status">每次移动 1 cm，按住 Shift 点击移动 10 cm</span></div><label>颜色</label><input id="color" type="color"><div class="row" style="margin-top:10px"><button id="rotate">旋转 90°</button><button id="remove">删除</button></div></div><hr class="sep"><button id="reset">恢复当前空间</button><p class="hint">活动家具尺寸单位为厘米，可在 2D 拖动。家具布局保存在当前浏览器。</p></aside><main class="stage"><div class="bar"><span style="font-weight:600;margin-right:8px">视图</span><button id="b2" class="active">2D 平面</button><button id="b3">3D 示意</button><button id="homeview">重置视角</button><button id="zoomout" title="缩小 2D 平面图" aria-label="缩小平面图">−</button><span id="zoomvalue" class="dim" aria-live="polite">100%</span><button id="zoomin" title="放大 2D 平面图" aria-label="放大平面图">＋</button><select id="walls" hidden aria-label="3D 墙体显示"><option value="auto">自动剖切</option><option value="full">完整墙体</option><option value="low">低墙剖切</option></select><button id="kitchenfront" hidden>厨房门正视</button><select id="kitchenslide" hidden aria-label="厨房门滑动示意"><option value="0">向左 · 实拍状态</option><option value="0.5">居中 · 示意</option><option value="1">向右 · 示意</option></select><button id="undo" title="Ctrl / ⌘ + Z">撤销</button><button id="redo" title="Ctrl / ⌘ + Shift + Z">重做</button><button id="save">保存</button><span id="saveStatus" class="dim" role="status"></span><span id="status" class="dim"></span></div><div class="view"><div class="plan" id="plan"></div><div id="three"></div></div><footer class="legend" id="legend"><span class="wall-key">墙体</span><span class="opening-key">门与通道</span><span class="window-key">窗</span><span class="slider-key">推拉门 · 蓝色为玻璃</span><span class="fixed-key">定制柜 · 固定</span><span class="move-key">活动家具</span><small>推拉门为示意，门扇数量、方向及尺寸待确认</small></footer></main></div>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -372,6 +372,7 @@ function dragFurniture(event, el) {
   let nextX=originalX, nextY=originalY, moved=false;
   svg.querySelector('.furniture.selected')?.classList.remove('selected');
   el.classList.add('selected');
+  $('status').textContent=`正在调整：${f.n}`;
   el.setPointerCapture(event.pointerId);
   el.onpointermove=e=>{
     if (e.pointerId!==event.pointerId || (!moved && Math.hypot(e.clientX-event.clientX,e.clientY-event.clientY)<3)) return;
@@ -380,6 +381,7 @@ function dragFurniture(event, el) {
     setPosition(next,key,originalX+pos.x-start.x,originalY+pos.y-start.y);
     ({x:nextX,y:nextY}=next);
     el.setAttribute('transform',`translate(${ox+nextX} ${oy+nextY})`);
+    $('status').textContent=`${f.n} · X ${nextX.toFixed(1)} cm / Y ${nextY.toFixed(1)} cm`;
   };
   function finish(e) {
     if (e.pointerId!==event.pointerId) return;
@@ -391,6 +393,7 @@ function dragFurniture(event, el) {
         commitEdit(key,before);
       }
       selectRoom(key,f.id);
+      $('status').textContent=moved ? `已调整 ${f.n} · 可撤销` : `已选中 ${f.n}`;
     } else sync();
   }
   el.onpointerup=el.onpointercancel=el.onlostpointercapture=finish;
@@ -440,6 +443,8 @@ function sync() {
     $(id).value = f?.[key] ?? '';
   }
   $('rotate').disabled = $('remove').disabled = !f;
+  $('nudge').hidden=!f;
+  $('nudgeStatus').textContent=f ? `当前位置 X ${f.x.toFixed(1)} cm · Y ${f.y.toFixed(1)} cm` : '';
   if (mode === '2') draw();
   else build3();
 }
@@ -1211,6 +1216,20 @@ $('addReferenceBed').onclick = () => {
 $('add').onclick = () => {
   addItem({id:Date.now(),n:'新家具',x:40,y:40,w:80,d:50,h:75,c:'#d1bfae'});
 };
+$('nudge').querySelectorAll('[data-nudge]').forEach(button=>button.onclick=event=>{
+  const f=selectedItem();
+  if(!f) return;
+  const [dx,dy]=button.dataset.nudge.split(',').map(Number);
+  const step=event.shiftKey?10:1;
+  const originalX=f.x,originalY=f.y;
+  const candidate={...f};
+  setPosition(candidate,current,f.x+dx*step,f.y+dy*step);
+  if(candidate.x===originalX && candidate.y===originalY){
+    $('nudgeStatus').textContent='已到房间边界，无法继续移动';
+    return;
+  }
+  applyEdit(()=>{f.x=candidate.x;f.y=candidate.y;});
+});
 $('rotate').onclick = () => {
   const f=selectedItem();
   if (!f) return;
