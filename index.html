@@ -5,7 +5,8 @@
 .fixed-part.photo-cabinet{fill:#5b4334}.fixed-label-vertical{writing-mode:vertical-rl;dominant-baseline:middle}
 .measure-mode-label{display:inline-flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}.measure-mode-label select{width:auto;max-width:110px;padding:7px 5px}.live-measure-readout{position:absolute;top:18px;right:18px;z-index:2;background:rgba(255,255,255,.96);border:1px solid #e6e6e6;border-radius:12px;padding:10px 14px;max-width:min(270px,50%);box-shadow:0 5px 20px #0000000b;font-size:12px;line-height:1.7;pointer-events:none}.live-measure-readout strong{display:block;color:#171717;margin-bottom:3px}.live-measure-readout span{display:block;color:#e60012;font-variant-numeric:tabular-nums}.measure-line{stroke:#e60012;stroke-width:2;stroke-dasharray:5 4;pointer-events:none}.measure-dot{fill:#e60012;pointer-events:none}.measure-label{fill:#e60012;font-size:14px;font-weight:700;text-anchor:middle;paint-order:stroke;stroke:#fff;stroke-width:5;stroke-linejoin:round;pointer-events:none}.distance-info{font-size:12px;line-height:1.7;padding:10px 0;color:#444}.distance-info strong{color:#171717}.layout-warnings{padding:10px 12px;margin-top:12px;border-radius:10px;background:#fff2f0;color:#9e2424;font-size:12px;line-height:1.6}.furniture.collision rect{stroke:#d82c2c;stroke-width:3;stroke-dasharray:6 3}.snap-toggle{display:flex;align-items:center;gap:7px;margin-top:12px;flex-wrap:wrap}.snap-toggle input{width:auto;accent-color:#e60012}.nudge{margin:14px 0 8px}.nudge-grid{display:flex;gap:6px;margin:8px 0}.nudge-grid button{flex:1;min-width:0;padding:8px 4px}.nudge-grid button:focus-visible{outline:2px solid #e60012;outline-offset:2px}#zoomvalue{min-width:42px;text-align:center;font-variant-numeric:tabular-nums}#zoomin,#zoomout{min-width:38px}#copyScheme{margin-top:8px}.furniture.selected rect{stroke:#b32630;stroke-width:3} #saveStatus[data-failed]{color:#a5212a;font-weight:600}
 #comparisonSummary{white-space:pre-line;color:#30586e}.comparison-footprint{fill:#5284a117;stroke:#326783;stroke-width:2;stroke-dasharray:6 4;vector-effect:non-scaling-stroke}.comparison-caption{font-size:10px;fill:#234d63;paint-order:stroke;stroke:#fff;stroke-width:2.5;stroke-linejoin:round}
-</style></head><body><header><strong>MY HOME <span style="color:#999;font-weight:400">· 家居实验室</span></strong><span class="tag">V4.8 · 方案对比</span></header><div class="layout"><aside><h3>空间</h3><label>查看范围</label><select id="room" aria-label="查看范围"></select><div id="roomdims" class="hint"></div><section id="schemes" hidden><label for="scheme">布局方案</label><select id="scheme"></select><button id="copyScheme" type="button">复制当前方案</button><div id="comparisonControls" hidden><label for="comparisonSlot">叠图对比 · 2D</label><select id="comparisonSlot"></select><p id="comparisonSummary" class="hint" aria-live="polite"></p></div></section><hr class="sep"><h3>家具</h3><button class="primary" id="add" style="width:100%">＋ 添加家具</button><button id="addReferenceBed" hidden>加入实拍床</button><div id="editor"><label>选择家具</label><select id="items"></select><label>名称</label><input id="name"><div class="row"><div><label>宽 cm</label><input id="fw" type="number"></div><div><label>深 cm</label><input id="fd" type="number"></div><div><label>高 cm</label><input id="fh" type="number"></div></div><div class="row"><div><label for="fx">位置 X cm</label><input id="fx" type="number" min="0" step="0.1"></div><div><label for="fy">位置 Y cm</label><input id="fy" type="number" min="0" step="0.1"></div></div><label class="snap-toggle"><input id="snap" type="checkbox" checked> 自动吸附对齐 <span class="dim">（靠墙 / 家具边缘，6 cm 内）</span></label><div id="layoutWarnings" class="layout-warnings" role="status" aria-live="polite" hidden></div><div id="distanceInfo" class="distance-info" hidden></div><div id="nudge" class="nudge"><span class="dim">位置微调</span><div class="nudge-grid"><button type="button" data-nudge="0,-1" aria-label="上移家具">↑</button><button type="button" data-nudge="-1,0" aria-label="左移家具">←</button><button type="button" data-nudge="0,1" aria-label="下移家具">↓</button><button type="button" data-nudge="1,0" aria-label="右移家具">→</button></div><span id="nudgeStatus" class="dim" role="status">每次移动 1 cm，按住 Shift 点击移动 10 cm</span></div><label>颜色</label><input id="color" type="color"><div class="row" style="margin-top:10px"><button id="rotate">旋转 90°</button><button id="remove">删除</button></div></div><hr class="sep"><button id="reset">恢复当前空间</button><p class="hint">活动家具尺寸单位为厘米，可在 2D 拖动。家具布局保存在当前浏览器。</p></aside><main class="stage"><div class="bar"><span style="font-weight:600;margin-right:8px">视图</span><button id="b2" class="active">2D 平面</button><button id="b3">3D 示意</button><button id="homeview">重置视角</button><label id="measureModeLabel" class="measure-mode-label" for="measureMode">距离显示 <select id="measureMode" aria-label="距离标注类型"><option value="all">全部</option><option value="furniture">家具之间</option><option value="walls">四侧墙距</option><option value="none">关闭</option></select></label><button id="zoomout" title="缩小 2D 平面图" aria-label="缩小平面图">−</button><span id="zoomvalue" class="dim" aria-live="polite">100%</span><button id="zoomin" title="放大 2D 平面图" aria-label="放大平面图">＋</button><select id="walls" hidden aria-label="3D 墙体显示"><option value="auto">自动剖切</option><option value="full">完整墙体</option><option value="low">低墙剖切</option></select><button id="kitchenfront" hidden>厨房门正视</button><select id="kitchenslide" hidden aria-label="厨房门滑动示意"><option value="0">向左 · 实拍状态</option><option value="0.5">居中 · 示意</option><option value="1">向右 · 示意</option></select><button id="undo" title="Ctrl / ⌘ + Z">撤销</button><button id="redo" title="Ctrl / ⌘ + Shift + Z">重做</button><button id="save">保存</button><span id="saveStatus" class="dim" role="status"></span><span id="status" class="dim"></span></div><div class="view"><div class="plan" id="plan"></div><div id="liveMeasureReadout" class="live-measure-readout" role="status" aria-live="off" hidden></div><div id="three"></div></div><footer class="legend" id="legend"><span class="wall-key">墙体</span><span class="opening-key">门与通道</span><span class="window-key">窗</span><span class="slider-key">推拉门 · 蓝色为玻璃</span><span class="fixed-key">定制柜 · 固定</span><span class="move-key">活动家具</span><small>推拉门为示意，门扇数量、方向及尺寸待确认</small></footer></main></div>
+#schemeNote{box-sizing:border-box;width:100%;font:inherit;color:inherit;background:#fff;border:1px solid #dedede;border-radius:9px;padding:8px;resize:vertical}#saveSchemeNotes{margin-top:5px}#comparisonSummary{overflow-wrap:anywhere}
+</style></head><body><header><strong>MY HOME <span style="color:#999;font-weight:400">· 家居实验室</span></strong><span class="tag">V4.9 · 方案笔记</span></header><div class="layout"><aside><h3>空间</h3><label>查看范围</label><select id="room" aria-label="查看范围"></select><div id="roomdims" class="hint"></div><section id="schemes" hidden><label for="scheme">布局方案</label><select id="scheme"></select><button id="copyScheme" type="button">复制当前方案</button><div class="scheme-notes"><label for="schemeName">方案名称</label><input id="schemeName" maxlength="32" placeholder="如：保留阳台通道"><label for="schemeNote">方案备注</label><textarea id="schemeNote" maxlength="280" rows="2" placeholder="记下这个布局的用途或取舍"></textarea><button id="saveSchemeNotes" type="button" disabled>保存方案笔记</button></div><div id="comparisonControls" hidden><label for="comparisonSlot">叠图对比 · 2D</label><select id="comparisonSlot"></select><p id="comparisonSummary" class="hint" aria-live="polite"></p></div></section><hr class="sep"><h3>家具</h3><button class="primary" id="add" style="width:100%">＋ 添加家具</button><button id="addReferenceBed" hidden>加入实拍床</button><div id="editor"><label>选择家具</label><select id="items"></select><label>名称</label><input id="name"><div class="row"><div><label>宽 cm</label><input id="fw" type="number"></div><div><label>深 cm</label><input id="fd" type="number"></div><div><label>高 cm</label><input id="fh" type="number"></div></div><div class="row"><div><label for="fx">位置 X cm</label><input id="fx" type="number" min="0" step="0.1"></div><div><label for="fy">位置 Y cm</label><input id="fy" type="number" min="0" step="0.1"></div></div><label class="snap-toggle"><input id="snap" type="checkbox" checked> 自动吸附对齐 <span class="dim">（靠墙 / 家具边缘，6 cm 内）</span></label><div id="layoutWarnings" class="layout-warnings" role="status" aria-live="polite" hidden></div><div id="distanceInfo" class="distance-info" hidden></div><div id="nudge" class="nudge"><span class="dim">位置微调</span><div class="nudge-grid"><button type="button" data-nudge="0,-1" aria-label="上移家具">↑</button><button type="button" data-nudge="-1,0" aria-label="左移家具">←</button><button type="button" data-nudge="0,1" aria-label="下移家具">↓</button><button type="button" data-nudge="1,0" aria-label="右移家具">→</button></div><span id="nudgeStatus" class="dim" role="status">每次移动 1 cm，按住 Shift 点击移动 10 cm</span></div><label>颜色</label><input id="color" type="color"><div class="row" style="margin-top:10px"><button id="rotate">旋转 90°</button><button id="remove">删除</button></div></div><hr class="sep"><button id="reset">恢复当前空间</button><p class="hint">活动家具尺寸单位为厘米，可在 2D 拖动。家具布局保存在当前浏览器。</p></aside><main class="stage"><div class="bar"><span style="font-weight:600;margin-right:8px">视图</span><button id="b2" class="active">2D 平面</button><button id="b3">3D 示意</button><button id="homeview">重置视角</button><label id="measureModeLabel" class="measure-mode-label" for="measureMode">距离显示 <select id="measureMode" aria-label="距离标注类型"><option value="all">全部</option><option value="furniture">家具之间</option><option value="walls">四侧墙距</option><option value="none">关闭</option></select></label><button id="zoomout" title="缩小 2D 平面图" aria-label="缩小平面图">−</button><span id="zoomvalue" class="dim" aria-live="polite">100%</span><button id="zoomin" title="放大 2D 平面图" aria-label="放大平面图">＋</button><select id="walls" hidden aria-label="3D 墙体显示"><option value="auto">自动剖切</option><option value="full">完整墙体</option><option value="low">低墙剖切</option></select><button id="kitchenfront" hidden>厨房门正视</button><select id="kitchenslide" hidden aria-label="厨房门滑动示意"><option value="0">向左 · 实拍状态</option><option value="0.5">居中 · 示意</option><option value="1">向右 · 示意</option></select><button id="undo" title="Ctrl / ⌘ + Z">撤销</button><button id="redo" title="Ctrl / ⌘ + Shift + Z">重做</button><button id="save">保存</button><span id="saveStatus" class="dim" role="status"></span><span id="status" class="dim"></span></div><div class="view"><div class="plan" id="plan"></div><div id="liveMeasureReadout" class="live-measure-readout" role="status" aria-live="off" hidden></div><div id="three"></div></div><footer class="legend" id="legend"><span class="wall-key">墙体</span><span class="opening-key">门与通道</span><span class="window-key">窗</span><span class="slider-key">推拉门 · 蓝色为玻璃</span><span class="fixed-key">定制柜 · 固定</span><span class="move-key">活动家具</span><small>推拉门为示意，门扇数量、方向及尺寸待确认</small></footer></main></div>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -482,6 +483,22 @@ function fixedMark(asset) {
       `<rect class="fixed-part${desk ? ' desk' : ''}${asset.cabinet ? ' photo-cabinet' : ''}" x="${x}" y="${y}" width="${w}" height="${h}"/><text class="fixed-label${w<h ? labelClass : ''}" x="${x+w/2}" y="${y+h/2+4}">${label}</text>`).join('') + '</g>';
 }
 
+function schemeMetadata(room,slot) {
+  return room.metadata?.[slot] ?? {name:'',note:''};
+}
+
+function schemeLabel(room,slot) {
+  const {name}=schemeMetadata(room,slot);
+  return name ? '方案 '+slot+' · '+name : '方案 '+slot;
+}
+
+function updateSchemeNotes(layout) {
+  const {name,note}=schemeMetadata(layout,layout.active);
+  $('schemeName').value=name;
+  $('schemeNote').value=note;
+  $('saveSchemeNotes').disabled=true;
+}
+
 function compareLayouts(room,slot) {
   const reference=data.rooms[room]?.variants[slot];
   if (!reference || slot===data.rooms[room].active) return null;
@@ -510,7 +527,7 @@ function updateComparisonControls() {
   summary.textContent='';
   if (!layout || mode!=='2') return;
   const alternatives=slots.filter(slot=>slot!==layout.active && layout.variants[slot]);
-  select.replaceChildren(new Option('关闭对比',''),...alternatives.map(slot=>new Option('叠显方案 '+slot,slot)));
+  select.replaceChildren(new Option('关闭对比',''),...alternatives.map(slot=>new Option('叠显'+schemeLabel(layout,slot),slot)));
   select.disabled=!alternatives.length;
   const slot=compareByRoom.get(current);
   select.value=alternatives.includes(slot) ? slot : '';
@@ -524,7 +541,10 @@ function updateComparisonControls() {
     item.n+' · '+[moved && '位置',resized && '尺寸',rotated && '朝向',appearance && '名称或颜色'].filter(Boolean).join('、'));
   if (referenceOnly.length) notes.push('仅 '+slot+'：'+referenceOnly.map(item=>item.n).join('、'));
   if (activeOnly.length) notes.push('仅 '+layout.active+'：'+activeOnly.map(item=>item.n).join('、'));
-  summary.textContent='实色 '+layout.active+' · 蓝色虚线 '+slot+'\n'+(notes.join('\n') || '两方案的活动家具一致。');
+  const referenceNote=schemeMetadata(layout,slot).note;
+  summary.textContent='实色 '+schemeLabel(layout,layout.active)+' · 蓝色虚线 '+schemeLabel(layout,slot)
+    +(referenceNote ? '\n对照方案备注：'+referenceNote : '')
+    +'\n'+(notes.join('\n') || '两方案的活动家具一致。');
 }
 
 function comparisonOverlay(room) {
@@ -631,8 +651,9 @@ function sync() {
   const room = plan.rooms[current], f = selectedItem(), layout=data.rooms[current];
   $('schemes').hidden=!layout;
   if (layout) {
-    $('scheme').replaceChildren(...slots.map(slot=>new Option('方案 '+slot+(layout.variants[slot] ? '' : ' · 新建'),slot)));
+    $('scheme').replaceChildren(...slots.map(slot=>new Option(schemeLabel(layout,slot)+(layout.variants[slot] ? '' : ' · 新建'),slot)));
     $('scheme').value=layout.active;
+    updateSchemeNotes(layout);
     $('copyScheme').disabled=slots.every(slot=>layout.variants[slot]);
   }
   updateComparisonControls();
@@ -1407,6 +1428,25 @@ for (const [id,key] of Object.entries({name:'n',fw:'w',fd:'d',fh:'h',fx:'x',fy:'
     });
   };
 }
+function saveSchemeNotes() {
+  const layout=data.rooms[current];
+  if (!layout) return;
+  const previous=schemeMetadata(layout,layout.active);
+  const name=$('schemeName').value.trim(), note=$('schemeNote').value.trim();
+  if (name===previous.name && note===previous.note) return;
+  (layout.metadata ??= {})[layout.active]={name,note};
+  $('scheme').selectedOptions[0].textContent=schemeLabel(layout,layout.active);
+  $('saveSchemeNotes').disabled=true;
+  updateComparisonControls();
+  save();
+}
+
+for (const id of ['schemeName','schemeNote']) {
+  $(id).oninput=()=>{$('saveSchemeNotes').disabled=false;};
+  $(id).onchange=saveSchemeNotes;
+}
+$('saveSchemeNotes').onclick=saveSchemeNotes;
+
 $('scheme').onchange = e => {
   const layout=data.rooms[current], slot=e.target.value;
   layout.variants[slot] ??= structuredClone(layout.baseline);
@@ -1426,6 +1466,8 @@ $('copyScheme').onclick = () => {
   const layout=data.rooms[current], slot=slots.find(slot=>!layout.variants[slot]);
   if (!slot) return;
   layout.variants[slot]=structuredClone(furniture(current));
+  const {name,note}=schemeMetadata(layout,layout.active);
+  if (name || note) (layout.metadata ??= {})[slot]={name:name ? (name.slice(0,29)+' 副本') : '',note};
   layout.active=slot;
   save();
   sync();
