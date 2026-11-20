@@ -152,9 +152,27 @@ summary { cursor: pointer; font-weight: 600; border-radius: 6px; }
 #sofaBedFeedback { margin:7px 0; line-height:1.5; }
 .furniture .expanded-area, .furniture.selected .expanded-area { fill:#5d819946; stroke:#365e75; stroke-width:1.25; stroke-dasharray:4 3; vector-effect:non-scaling-stroke; pointer-events:none; }
 .mirror-front {stroke:#365e75;stroke-width:1.5;vector-effect:non-scaling-stroke;pointer-events:none}
+.asset-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:14px 0 8px}
+.asset-heading h3{font-size:14px;margin:0}
+.asset-list{display:grid;gap:6px;margin-bottom:8px}
+.asset-card{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:8px;border:1px solid #dedede;border-radius:10px;padding:7px}
+.asset-thumb{width:36px;height:36px;object-fit:cover;border-radius:6px;display:grid;place-items:center}
+.asset-info{min-width:0}
+.asset-info strong{display:block;font-size:13px;overflow-wrap:anywhere}
+.asset-info small{display:block;color:#606060;font-size:11px}
+.asset-actions{display:flex;flex-direction:column;gap:3px}
+.asset-actions button,.asset-heading button{min-height:32px;padding:3px 8px;font-size:12px}
+.asset-dialog{width:min(410px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-sizing:border-box;border:1px solid #dedede;border-radius:14px;padding:20px;color:#171717}
+.asset-dialog::backdrop{background:#0006}
+.asset-dialog h2{margin:0 0 12px}
+.asset-dialog label{margin-top:9px}
+.asset-dialog .dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}
+.asset-dialog input[type=file]{width:100%;font-size:12px}
+.asset-notice{margin:5px 0;font-size:12px;color:#555}
+.asset-notice:empty{display:none}
 </style></head><body>
 <header class="app-header">
-  <div class="brand"><span class="brand-mark" aria-hidden="true">⌂</span><strong>MY HOME</strong><span class="editor-version">V5.1</span></div>
+  <div class="brand"><span class="brand-mark" aria-hidden="true">⌂</span><strong>MY HOME</strong><span class="editor-version">V5.2</span></div>
   <div id="workspaceContext" class="workspace-context">全屋户型</div>
   <div class="history-actions"><button id="undo" title="Ctrl / ⌘ + Z">撤销</button><button id="redo" title="Ctrl / ⌘ + Shift + Z">重做</button></div>
   <div class="save-actions"><span id="saveStatus" class="dim" role="status"></span><button id="save">保存</button></div>
@@ -169,6 +187,9 @@ summary { cursor: pointer; font-weight: 600; border-radius: 6px; }
         <button type="button" id="addStudioMirror"><span class="library-symbol" aria-hidden="true">＋</span><span><strong>带轮全身镜</strong><small id="studioMirrorState">多功能房 · 实拍</small></span></button>
       </div>
       <button id="addReferenceBed" hidden>加入实拍床</button><button class="primary" id="add" style="width:100%">＋ 添加普通家具</button>
+      <div class="asset-heading"><h3>我的家具</h3><button type="button" id="newAsset" disabled>＋ 添加家具</button></div>
+      <p class="asset-notice" id="assetNotice" role="status"></p>
+      <div id="assetList" class="asset-list"></div>
       <div id="placedFurniture" hidden><label for="items">当前布局的家具</label><select id="items"></select></div>
     </section>
     <details class="panel-section" id="schemePanel"><summary>方案管理</summary><section id="schemes" hidden><label for="scheme">布局方案</label><select id="scheme"></select><button id="copyScheme" type="button">复制当前方案</button><div class="scheme-notes"><label for="schemeName">方案名称</label><input id="schemeName" maxlength="32" placeholder="如：保留阳台通道"><label for="schemeNote">方案备注</label><textarea id="schemeNote" maxlength="280" rows="2" placeholder="记下这个布局的用途或取舍"></textarea><button id="saveSchemeNotes" type="button" disabled>保存方案笔记</button></div><div id="comparisonControls" hidden><label for="comparisonSlot">叠图对比 · 2D</label><select id="comparisonSlot"></select><p id="comparisonSummary" class="hint" aria-live="polite"></p></div></section><button id="reset">恢复当前空间</button></details>
@@ -189,6 +210,7 @@ summary { cursor: pointer; font-weight: 600; border-radius: 6px; }
   <aside class="inspector" id="inspector" aria-label="家具属性" hidden>
     <div class="inspector-heading"><h2>家具属性</h2><button id="clearSelection" type="button" aria-label="取消选中">×</button></div>
     <div id="editor">
+      <p id="furnitureModelLabel" class="asset-notice"></p>
       <label for="name">名称</label><input id="name">
       <section id="sofaBedControls" class="sofa-bed-controls" hidden aria-label="沙发床状态">
         <label for="sofaBedState">沙发床状态</label><select id="sofaBedState"><option value="folded">收起 · 实拍</option><option value="expanded">展开 · 占地实验</option></select>
@@ -208,6 +230,27 @@ summary { cursor: pointer; font-weight: 600; border-radius: 6px; }
     </div>
   </aside>
 </div>
+<dialog id="assetDialog" class="asset-dialog" aria-labelledby="assetTitle">
+  <form id="assetForm">
+    <h2 id="assetTitle">添加家具</h2>
+    <label for="assetName">名称</label><input id="assetName" required maxlength="64">
+    <div class="row">
+      <div><label for="assetCategory">分类</label><select id="assetCategory"><option>座椅与沙发</option><option>桌几</option><option>床</option><option>收纳</option><option>镜子与装饰</option><option>其他</option></select></div>
+      <div><label for="assetPurchase">购买状态</label><select id="assetPurchase"><option>已购买</option><option>考虑购买</option></select></div>
+    </div>
+    <div class="row">
+      <div><label for="assetWidth">宽 cm</label><input id="assetWidth" type="number" required min="0.1" max="2000" step="0.1"></div>
+      <div><label for="assetDepth">深 cm</label><input id="assetDepth" type="number" required min="0.1" max="2000" step="0.1"></div>
+      <div><label for="assetHeight">高 cm</label><input id="assetHeight" type="number" required min="0.1" max="2000" step="0.1"></div>
+    </div>
+    <div class="inline-color"><label for="assetColor">颜色</label><input id="assetColor" type="color"></div>
+    <label for="assetPhoto">照片（可选）</label><input id="assetPhoto" type="file" accept="image/jpeg,image/png,image/webp">
+    <p class="asset-notice" id="assetPhotoNote"></p>
+    <p class="asset-notice">3D 使用尺寸占位模型。编辑资料只影响以后加入的实例。</p>
+    <p class="asset-notice" id="assetError" role="alert"></p>
+    <div class="dialog-actions"><button type="button" id="cancelAsset">取消</button><button type="submit" class="primary" id="saveAsset">保存到家具库</button></div>
+  </form>
+</dialog>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -1039,6 +1082,8 @@ function sync(selectionOnly=false) {
     $(id).disabled = !f;
     $(id).value = f?.[key] ?? '';
   }
+  $('furnitureModelLabel').textContent=f?.assetId ? '尺寸占位模型 · 当前布局实例' :
+    f?.model?.startsWith('photo-') ? '实拍参考模型' : '';
   $('rotate').disabled = $('remove').disabled = !f;
   $('nudge').hidden=!f;
   const conflicts=room ? furnitureCollisions(current) : new Map();
@@ -2074,13 +2119,187 @@ $('copyScheme').onclick = () => {
 $('undo').onclick = () => navigateHistory('undo');
 $('redo').onclick = () => navigateHistory('redo');
 document.addEventListener('keydown',event=>{
-  if (!(event.ctrlKey || event.metaKey) || event.altKey ||
+  if ($('assetDialog').open || !(event.ctrlKey || event.metaKey) || event.altKey ||
     event.target.closest('input,textarea,select,[contenteditable]')) return;
   const key=event.key.toLowerCase();
   if (key!=='z' && key!=='y') return;
   event.preventDefault();
   navigateHistory(key==='y' || event.shiftKey ? 'redo' : 'undo');
 });
+
+// User assets are independent of the existing room/variant storage key.
+// Instances carry a snapshot so a photo or library edit cannot alter a layout.
+let assetDatabase;
+let editingAsset;
+const assetFields={assetName:'name',assetCategory:'category',assetPurchase:'purchase',
+  assetWidth:'width',assetDepth:'depth',assetHeight:'height',assetColor:'color'};
+
+function assetStore(mode, operation) {
+  return new Promise((resolve,reject)=>{
+    const transaction=assetDatabase.transaction('furniture',mode);
+    const request=operation(transaction.objectStore('furniture'));
+    transaction.oncomplete=()=>resolve(request.result);
+    transaction.onabort=()=>reject(transaction.error);
+  });
+}
+
+const thumbnailUrls=[];
+async function showAssets() {
+  const assets=await assetStore('readonly',store=>store.getAll());
+  thumbnailUrls.splice(0).forEach(url=>URL.revokeObjectURL(url));
+  $('assetList').replaceChildren(...assets.map(asset=>{
+    const card=document.createElement('article');
+    card.className='asset-card';
+    const thumb=document.createElement(asset.photo ? 'img' : 'span');
+    thumb.className='asset-thumb';
+    if(asset.photo){
+      const url=URL.createObjectURL(asset.photo);
+      thumbnailUrls.push(url);
+      thumb.src=url;
+      thumb.alt='';
+    }else{
+      thumb.style.background=asset.color;
+      thumb.textContent='◇';
+      thumb.setAttribute('aria-hidden','true');
+    }
+    const info=document.createElement('div');
+    info.className='asset-info';
+    const name=document.createElement('strong');
+    name.textContent=asset.name;
+    const size=document.createElement('small');
+    size.textContent=`${asset.width} × ${asset.depth} × ${asset.height} cm`;
+    const labels=document.createElement('small');
+    labels.textContent=`${asset.category} · ${asset.purchase} · 尺寸占位`;
+    info.append(name,size,labels);
+    const actions=document.createElement('div');
+    actions.className='asset-actions';
+    const place=document.createElement('button');
+    place.type='button';
+    place.textContent='加入房间';
+    place.setAttribute('aria-label','加入房间：'+asset.name);
+    place.onclick=()=>placeAsset(asset);
+    const edit=document.createElement('button');
+    edit.type='button';
+    edit.textContent='编辑';
+    edit.setAttribute('aria-label','编辑：'+asset.name);
+    edit.onclick=()=>openAssetEditor(asset);
+    actions.append(place,edit);
+    card.append(thumb,info,actions);
+    return card;
+  }));
+}
+
+function placeAsset(asset) {
+  const room=plan.rooms[current];
+  if(!room){
+    $('assetNotice').textContent='先选择要摆放家具的房间。';
+    $('room').focus();
+    return;
+  }
+  const [, , roomWidth,roomDepth]=room.box;
+  if(asset.width>roomWidth || asset.depth>roomDepth){
+    $('assetNotice').textContent='家具的占地超过当前房间。请选择其他房间或核对尺寸。';
+    return;
+  }
+  const item={id:'placed-'+crypto.randomUUID(),assetId:asset.id,n:asset.name,
+    w:asset.width,d:asset.depth,h:asset.height,c:asset.color};
+  setPosition(item,current,40,40);
+  addItem(item);
+  $('assetNotice').textContent=`已加入${room.name} · 方案 ${data.rooms[current].active}，可撤销。`;
+}
+
+function openAssetEditor(asset=null) {
+  editingAsset=asset;
+  $('assetForm').reset();
+  $('assetName').setCustomValidity('');
+  for(const [id,key] of Object.entries(assetFields)) if(asset) $(id).value=asset[key];
+  if(!asset) $('assetColor').value='#9c9c9c';
+  $('assetTitle').textContent=asset ? '编辑家具' : '添加家具';
+  $('assetPhotoNote').textContent=asset?.photo ? '已保存照片。选择新文件可替换。' : 'JPG、PNG 或 WebP，最多 20 MB。';
+  $('assetError').textContent='';
+  $('assetDialog').showModal();
+}
+
+async function thumbnail(file) {
+  if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size>20*1024*1024)
+    throw new Error('请选择 20 MB 以内的 JPG、PNG 或 WebP 照片。');
+  let image;
+  try {
+    image=await createImageBitmap(file,{imageOrientation:'from-image'});
+    const scale=Math.min(1,640/Math.max(image.width,image.height));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(image.width*scale));
+    canvas.height=Math.max(1,Math.round(image.height*scale));
+    canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',.82));
+    if(!blob) throw new Error();
+    return blob;
+  } catch {
+    throw new Error('无法读取或缩小这张照片，请换一张后重试。');
+  } finally {
+    image?.close();
+  }
+}
+
+$('assetName').oninput=()=> $('assetName').setCustomValidity('');
+$('newAsset').onclick=()=>openAssetEditor();
+$('cancelAsset').onclick=()=> $('assetDialog').close();
+$('assetDialog').addEventListener('cancel',event=>{
+  if($('saveAsset').disabled) event.preventDefault();
+});
+$('assetForm').onsubmit=async event=>{
+  event.preventDefault();
+  const name=$('assetName').value.trim();
+  if(!name){
+    $('assetName').setCustomValidity('请输入家具名称。');
+    $('assetName').reportValidity();
+    return;
+  }
+  const saveButton=$('saveAsset');
+  const cancelButton=$('cancelAsset');
+  if(saveButton.disabled) return;
+  saveButton.disabled=cancelButton.disabled=true;
+  $('assetError').textContent='';
+  const asset={id:editingAsset?.id ?? 'asset-'+crypto.randomUUID(),name,
+    category:$('assetCategory').value,purchase:$('assetPurchase').value,
+    width:$('assetWidth').valueAsNumber,depth:$('assetDepth').valueAsNumber,
+    height:$('assetHeight').valueAsNumber,color:$('assetColor').value,
+    photo:editingAsset?.photo ?? null};
+  try {
+    const file=$('assetPhoto').files[0];
+    if(file) asset.photo=await thumbnail(file);
+    try {
+      await assetStore('readwrite',store=>store.put(asset));
+    } catch {
+      throw new Error('家具库保存失败。请检查浏览器存储空间或权限后重试。');
+    }
+    $('assetDialog').close();
+    $('assetNotice').textContent='已保存到本机家具库。';
+    await showAssets().catch(()=>{
+      $('assetNotice').textContent='家具已保存，但列表读取失败。请刷新后重试。';
+    });
+  } catch(error) {
+    $('assetError').textContent=error.message;
+  } finally {
+    saveButton.disabled=cancelButton.disabled=false;
+  }
+};
+
+async function loadAssets() {
+  try {
+    assetDatabase=await new Promise((resolve,reject)=>{
+      const request=indexedDB.open('myhome-furniture-assets',1);
+      request.onupgradeneeded=()=>request.result.createObjectStore('furniture',{keyPath:'id'});
+      request.onsuccess=()=>resolve(request.result);
+      request.onerror=request.onblocked=()=>reject(request.error);
+    });
+    await showAssets();
+    $('newAsset').disabled=false;
+  } catch {
+    $('assetNotice').textContent='无法打开本机家具库，请检查浏览器存储权限。';
+  }
+}
+loadAssets();
 
 function addItem(item) {
   applyEdit(()=>{
@@ -2149,6 +2368,7 @@ function removeSelectedFurniture() {
 }
 // Capture phase handles keyboard shortcuts even when focus remains on an SVG or button.
 window.addEventListener('keydown',event=>{
+  if ($('assetDialog').open) return;
   if(event.key!=='Delete' && event.key!=='Backspace') return;
   if(event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
   const target=event.target;
