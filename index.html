@@ -1629,14 +1629,25 @@ $('rotate').onclick = () => {
     setPosition(f,current,f.x,f.y);
   });
 };
-$('remove').onclick = () => {
+function removeSelectedFurniture() {
   if (!selectedItem()) return;
   applyEdit(()=>{
     const items=furniture(current);
-    items.splice(items.findIndex(f=>f.id===selected),1);
+    const index=items.findIndex(f=>f.id===selected);
+    if(index>=0) items.splice(index,1);
     selected=null;
   });
-};
+}
+document.addEventListener('keydown',event=>{
+  if(event.key!=='Delete' && event.key!=='Backspace') return;
+  if(event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+  const target=event.target;
+  if(target instanceof Element && target.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]')) return;
+  if(!selectedItem()) return;
+  event.preventDefault();
+  removeSelectedFurniture();
+});
+$('remove').onclick = removeSelectedFurniture;
 $('reset').onclick = () => {
   if (!confirm('恢复当前方案到本机初始布局？此操作可撤销。')) return;
   applyEdit(()=>{
