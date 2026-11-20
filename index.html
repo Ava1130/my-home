@@ -337,16 +337,32 @@ function closestPoints(a,b) {
   const [y1,y2]=axis(a.y,a.y+a.d,b.y,b.y+b.d);
   return {x1,y1,x2,y2,gap:Math.hypot(x2-x1,y2-y1)};
 }
+function wallClearances(key,item) {
+  if(!item || !plan.rooms[key]) return [];
+  const [, ,width,depth]=plan.rooms[key].box;
+  return [
+    {name:'左侧墙边界',gap:Math.max(0,item.x)},
+    {name:'右侧墙边界',gap:Math.max(0,width-item.x-item.w)},
+    {name:'上侧墙边界',gap:Math.max(0,item.y)},
+    {name:'下侧墙边界',gap:Math.max(0,depth-item.y-item.d)}
+  ];
+}
 function updateMeasureReadout(key,item) {
   const panel=$('liveMeasureReadout');
   if(!item || key==='all' || mode!=='2') {panel.hidden=true;return;}
   const targets=roomObstacles(key,item.id).map(o=>({name:o.name,gap:rectangleGap(item,o)})).sort((a,b)=>a.gap-b.gap);
-  panel.hidden=targets.length===0;
+  const walls=wallClearances(key,item);
+  panel.hidden=targets.length===0 && walls.length===0;
   panel.replaceChildren();
-  if(!targets.length) return;
+  if(!targets.length && !walls.length) return;
   const heading=document.createElement('strong');
   heading.textContent='实时距离 · '+item.n;
   panel.appendChild(heading);
+  walls.forEach(t=>{
+    const line=document.createElement('span');
+    line.textContent=t.name+'：'+t.gap.toFixed(1)+' cm';
+    panel.appendChild(line);
+  });
   targets.forEach(t=>{
     const line=document.createElement('span');
     line.textContent=t.name+'：'+(t.gap<0.5?'接触 / 重叠':t.gap.toFixed(1)+' cm');
@@ -358,7 +374,7 @@ function dimensionOverlay(key,item) {
   const obstacles=roomObstacles(key,item.id);
   const [ox,oy]=plan.rooms[key].box;
   const labels=[];
-  return obstacles.map(target=>({...target,...closestPoints(item,target)}))
+  const furnitureLines=obstacles.map(target=>({...target,...closestPoints(item,target)}))
     .filter(target=>target.gap>=0.5)
     .sort((a,b)=>a.gap-b.gap)
     .map(target=>{
@@ -374,6 +390,26 @@ function dimensionOverlay(key,item) {
       if(!overlapping) labels.push(proposed);
       return `<g class="measurement" aria-label="与${escape(target.name)}相距 ${gap.toFixed(1)} 厘米"><line class="measure-line" x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"/><circle class="measure-dot" cx="${ax}" cy="${ay}" r="3"/><circle class="measure-dot" cx="${bx}" cy="${by}" r="3"/>${overlapping?'':`<text class="measure-label" x="${lx}" y="${ly}">${labelText}</text>`}</g>`;
     }).join('');
+  const [, ,width,depth]=plan.rooms[key].box;
+  const wallLines=[
+    {gap:item.x,ax:item.x,ay:item.y+item.d/2,bx:0,by:item.y+item.d/2},
+    {gap:width-item.x-item.w,ax:item.x+item.w,ay:item.y+item.d/2,bx:width,by:item.y+item.d/2},
+    {gap:item.y,ax:item.x+item.w/2,ay:item.y,bx:item.x+item.w/2,by:0},
+    {gap:depth-item.y-item.d,ax:item.x+item.w/2,ay:item.y+item.d,bx:item.x+item.w/2,by:depth}
+  ];
+  const wallMarkup=wallLines.filter(t=>t.gap>=0.5).map(t=>{
+    const ax=ox+t.ax,ay=oy+t.ay,bx=ox+t.bx,by=oy+t.by;
+    const mx=(ax+bx)/2,my=(ay+by)/2;
+    const horizontal=Math.abs(ay-by)<.5;
+    const lx=horizontal?mx:mx+18,ly=horizontal?my-10:my-6;
+    const label=t.gap.toFixed(1)+' cm';
+    const half=label.length*4.5+7;
+    const rect={left:lx-half,right:lx+half,top:ly-16,bottom:ly+4};
+    const collision=labels.some(box=>!(rect.right<box.left||rect.left>box.right||rect.bottom<box.top||rect.top>box.bottom));
+    if(!collision) labels.push(rect);
+    return `<g class="measurement wall-measure"><line class="measure-line" x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"/>${collision?'':`<text class="measure-label" x="${lx}" y="${ly}">${label}</text>`}</g>`;
+  }).join('');
+  return furnitureLines+wallMarkup;
 }
 function segments(w) {
   const solid = [];
