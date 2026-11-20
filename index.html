@@ -1,6 +1,6 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MY HOME · 家居实验室</title><style>
-*{box-sizing:border-box}body{margin:0;background:#f5f5f7;color:#191919;font:14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}header{height:60px;background:white;border-bottom:1px solid #e5e5e5;display:flex;align-items:center;justify-content:space-between;padding:0 24px}header strong{font-size:18px}.tag{font-size:12px;color:#666;background:#f4f4f4;padding:7px 10px;border-radius:20px}.layout{height:calc(100vh - 60px);display:grid;grid-template-columns:260px minmax(0,1fr)}aside{padding:22px;background:#fff;border-right:1px solid #e7e7e7;overflow:auto}h3{margin:4px 0 15px;font-size:15px}label{display:block;color:#666;font-size:12px;margin:13px 0 6px}input,select,button{font:inherit;border-radius:9px;border:1px solid #dedede;padding:10px;background:#fff;max-width:100%}input,select{width:100%}button{cursor:pointer}button:hover{background:#f6f6f6}.primary{background:#e60012;color:white;border-color:#e60012}.primary:hover{background:#c90011}.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}.stage{min-width:0;display:flex;flex-direction:column}.bar{padding:12px 20px;display:flex;gap:8px;background:white;border-bottom:1px solid #eaeaea;align-items:center;flex-wrap:wrap}.bar button.active{background:#171717;color:white}.view{position:relative;flex:1;min-height:0;overflow:hidden;display:flex;justify-content:center;align-items:center}.plan{width:min(95%,1050px);height:min(94%,800px);touch-action:none}.plan svg{width:100%;height:100%;overflow:visible}.room{fill:#eee9de;stroke:#262626;stroke-width:9;cursor:pointer}.room:hover{fill:#e5e0d5}.room.active{fill:#f4f0e9}.roomname{font-size:21px;fill:#333;pointer-events:none;text-anchor:middle}.area{font-size:15px;fill:#777;pointer-events:none;text-anchor:middle}.furniture{cursor:grab;touch-action:none}.furniture rect{stroke:#777;stroke-width:1.5}.furniture.selected rect{stroke:#e60012;stroke-width:4}.furniture text{pointer-events:none;font-size:12px;fill:#222}#three{position:absolute;inset:0;display:none}#three canvas{display:block}.sep{border:0;border-top:1px solid #eee;margin:20px 0}.hint{font-size:12px;color:#888;line-height:1.7}.dim{font-size:12px;color:#777}.hidden{display:none!important}@media(max-width:700px){.layout{grid-template-columns:180px minmax(0,1fr)}aside{padding:12px}.bar{padding:8px}.bar button{padding:7px}}
-.stage{background:#f6f3ed}.plan{width:min(100%,1120px);height:100%;padding:14px}.room{stroke:none;fill:#eee5d4}.room[data-room="bath"],.room[data-room="kitchen"],.room[data-room="balcony"]{fill:#e3ebea}.room[data-room="living"],.room[data-room="dining"],.room[data-room="hall"]{fill:#f5ecd9}.room:hover{fill:#e6dac5}.room.active{cursor:default}.roomname{font-weight:600;font-size:22px}.area{font-size:17px}.wall-segment{stroke:#302f2b;stroke-width:13;stroke-linecap:square;pointer-events:none}.opening-line{stroke:#387389;stroke-width:3;fill:none;pointer-events:none}.slider-track{stroke:#4b504c;stroke-width:1.5;stroke-dasharray:6 3}.slider-panel{stroke:#81734f;stroke-width:6}.slider-panel.glass{stroke:#75acc2;stroke-width:6}.passage-line{stroke:#806f50;stroke-width:2;stroke-dasharray:8 6;pointer-events:none}.door-leaf{stroke:#806f50;stroke-width:2.5;fill:none;pointer-events:none}.fixed-part{fill:#786443;stroke:#514126;stroke-width:1.5}.fixed-part.desk{fill:#aa8c5b}.fixed-label{fill:#fff;font-size:13px;pointer-events:none;text-anchor:middle;paint-order:stroke;stroke:#514126;stroke-width:2}.legend{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;padding:12px 20px;background:#fff;border-top:1px solid #e7e7e7;font-size:12px}.legend span:before{content:"";display:inline-block;width:12px;height:9px;margin-right:6px}.wall-key:before{background:#302f2b}.opening-key:before{border-bottom:2px dashed #806f50}.window-key:before{background:#387389}.slider-key:before{border-block:1px dashed #4b504c;background:#a4c3c9}.fixed-key:before{background:#786443}.move-key:before{background:#c9b6a4}.legend small{color:#666;font-size:12px}.hint ul{padding-left:18px}.hint strong{color:#403529}button:disabled{opacity:.45;cursor:default}@media(max-width:700px){header{padding:0 12px}.layout{height:auto;display:flex;flex-direction:column}.stage{order:-1}.view{height:clamp(290px,65vw,510px);flex:none}aside{border-right:0;border-top:1px solid #e7e7e7}.legend{padding:8px 10px;gap:6px 12px}}
+*{box-sizing:border-box}body{margin:0;background:#f5f5f7;color:#191919;font:14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}header{height:60px;background:white;border-bottom:1px solid #e5e5e5;display:flex;align-items:center;justify-content:space-between;padding:0 24px}header strong{font-size:18px}.tag{font-size:12px;color:#666;background:#f4f4f4;padding:7px 10px;border-radius:20px}.layout{height:calc(100vh - 60px);display:grid;grid-template-columns:260px minmax(0,1fr)}aside{padding:22px;background:#fff;border-right:1px solid #e7e7e7;overflow:auto}h3{margin:4px 0 15px;font-size:15px}label{display:block;color:#666;font-size:12px;margin:13px 0 6px}input,select,button{font:inherit;border-radius:9px;border:1px solid #dedede;padding:10px;background:#fff;max-width:100%}input,select{width:100%}button{cursor:pointer}button:hover{background:#f6f6f6}.primary{background:#e60012;color:white;border-color:#e60012}.primary:hover{background:#c90011}.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}.stage{min-width:0;display:flex;flex-direction:column}.bar{padding:12px 20px;display:flex;gap:8px;background:white;border-bottom:1px solid #eaeaea;align-items:center;flex-wrap:wrap}.bar button.active{background:#171717;color:white}.view{position:relative;flex:1;min-height:0;overflow:hidden;display:flex;justify-content:center;align-items:center}.plan{width:min(95%,1050px);height:min(94%,800px);touch-action:none}.plan svg{width:100%;height:100%;display:block;overflow:hidden;max-width:100%;max-height:100%;}.room{fill:#eee9de;stroke:#262626;stroke-width:9;cursor:pointer}.room:hover{fill:#e5e0d5}.room.active{fill:#f4f0e9}.roomname{font-size:21px;fill:#333;pointer-events:none;text-anchor:middle}.area{font-size:15px;fill:#777;pointer-events:none;text-anchor:middle}.furniture{cursor:grab;touch-action:none}.furniture rect{stroke:#777;stroke-width:1.5}.furniture.selected rect{stroke:#e60012;stroke-width:4}.furniture text{pointer-events:none;font-size:12px;fill:#222}#three{position:absolute;inset:0;display:none}#three canvas{display:block}.sep{border:0;border-top:1px solid #eee;margin:20px 0}.hint{font-size:12px;color:#888;line-height:1.7}.dim{font-size:12px;color:#777}.hidden{display:none!important}@media(max-width:700px){.layout{grid-template-columns:180px minmax(0,1fr)}aside{padding:12px}.bar{padding:8px}.bar button{padding:7px}}
+.stage{background:#f6f3ed}.plan{width:100%;height:100%;min-width:0;min-height:0;padding:clamp(12px,2vw,24px);overflow:hidden;}.room{stroke:none;fill:#eee5d4}.room[data-room="bath"],.room[data-room="kitchen"],.room[data-room="balcony"]{fill:#e3ebea}.room[data-room="living"],.room[data-room="dining"],.room[data-room="hall"]{fill:#f5ecd9}.room:hover{fill:#e6dac5}.room.active{cursor:default}.roomname{font-weight:600;font-size:22px}.area{font-size:17px}.wall-segment{stroke:#302f2b;stroke-width:13;stroke-linecap:square;pointer-events:none}.opening-line{stroke:#387389;stroke-width:3;fill:none;pointer-events:none}.slider-track{stroke:#4b504c;stroke-width:1.5;stroke-dasharray:6 3}.slider-panel{stroke:#81734f;stroke-width:6}.slider-panel.glass{stroke:#75acc2;stroke-width:6}.passage-line{stroke:#806f50;stroke-width:2;stroke-dasharray:8 6;pointer-events:none}.door-leaf{stroke:#806f50;stroke-width:2.5;fill:none;pointer-events:none}.fixed-part{fill:#786443;stroke:#514126;stroke-width:1.5}.fixed-part.desk{fill:#aa8c5b}.fixed-label{fill:#fff;font-size:13px;pointer-events:none;text-anchor:middle;paint-order:stroke;stroke:#514126;stroke-width:2}.legend{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;padding:12px 20px;background:#fff;border-top:1px solid #e7e7e7;font-size:12px}.legend span:before{content:"";display:inline-block;width:12px;height:9px;margin-right:6px}.wall-key:before{background:#302f2b}.opening-key:before{border-bottom:2px dashed #806f50}.window-key:before{background:#387389}.slider-key:before{border-block:1px dashed #4b504c;background:#a4c3c9}.fixed-key:before{background:#786443}.move-key:before{background:#c9b6a4}.legend small{color:#666;font-size:12px}.hint ul{padding-left:18px}.hint strong{color:#403529}button:disabled{opacity:.45;cursor:default}@media(max-width:700px){header{padding:0 12px}.layout{height:auto;display:flex;flex-direction:column}.stage{order:-1}.view{height:clamp(290px,65vw,510px);flex:none}aside{border-right:0;border-top:1px solid #e7e7e7}.legend{padding:8px 10px;gap:6px 12px}}
 #walls,#kitchenslide{width:auto;max-width:100%}
 .fixed-part.photo-cabinet{fill:#5b4334}.fixed-label-vertical{writing-mode:vertical-rl;dominant-baseline:middle}
 #copyScheme{margin-top:8px}.furniture.selected rect{stroke:#b32630;stroke-width:3} #saveStatus[data-failed]{color:#a5212a;font-weight:600}
@@ -136,14 +136,31 @@ const retiredStudioPlaceholders = [
   {id:2,n:'升降桌',x:310,y:100,w:65,d:130,h:75,c:'#795f4a'},
   {id:3,n:'父亲电脑桌',x:165,y:275,w:100,d:55,h:75,c:'#b7b7b7'}
 ];
-const defaults = {bed:[referenceBed]};
+const referenceLivingSofa = {id:'living-photo-sofa',model:'photo-sofa',n:'客厅木沙发',
+  x:163,y:7,w:223,d:82,h:91,c:'#67412e',turns:0};
+const defaults = {bed:[referenceBed],living:[referenceLivingSofa]};
 const storageKey = 'myhome-v41';
 const slots = ['A','B','C'];
 
 function loadLayouts() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
-    if (saved?.version === 1 && saved.rooms) return saved;
+    if (saved?.version === 2 && saved.rooms) return saved;
+    // Preserve old A/B/C user layouts while migrating the formerly 3D-only
+    // photographed sofa into the shared editable furniture records.
+    if (saved?.version === 1 && saved.rooms) {
+      const room=saved.rooms.living;
+      if (room) {
+        const addIfMissing=items=>{
+          if (Array.isArray(items) && !items.some(item=>item.id===referenceLivingSofa.id))
+            items.push(structuredClone(referenceLivingSofa));
+        };
+        addIfMissing(room.baseline);
+        for (const items of Object.values(room.variants || {})) addIfMissing(items);
+      }
+      saved.version=2;
+      return saved;
+    }
   } catch {}
   let legacy;
   try { legacy = JSON.parse(localStorage.getItem('myhome-v32')); } catch {}
@@ -156,7 +173,7 @@ function loadLayouts() {
       Object.entries(placeholder).every(([field,value]) => item[field] === value)));
     rooms[room] = {baseline, active:'A', variants:{A:structuredClone(baseline)}};
   }
-  return {version:1,rooms};
+  return {version:2,rooms};
 }
 
 const data = loadLayouts();
@@ -317,7 +334,7 @@ function draw() {
     const [ox,oy] = plan.rooms[key].box;
     return furniture(key).map(f => `<g class="furniture${current === key && selected === f.id ? ' selected' : ''}" data-id="${f.id}" data-owner="${key}" transform="translate(${ox+f.x} ${oy+f.y})"><rect width="${f.w}" height="${f.d}" rx="3" fill="${escape(f.c)}"/><text x="6" y="17">${escape(f.n)}</text></g>`);
   });
-  $('plan').innerHTML = `<svg role="img" aria-label="住宅平面图，细部尺寸暂定" viewBox="${x-pad} ${y-pad} ${w+2*pad} ${h+2*pad}">${[
+  $('plan').innerHTML = `<svg role="img" aria-label="住宅平面图，细部尺寸暂定" preserveAspectRatio="xMidYMid meet" viewBox="${x-pad} ${y-pad} ${w+2*pad} ${h+2*pad}">${[
     ...fills,...labels,...movable,...plan.fixed.filter(asset => keys.includes(asset.room)).map(fixedMark),...walls
   ].join('')}</svg>`;
   $('plan').querySelectorAll('[data-room]').forEach(el => {
@@ -698,16 +715,22 @@ function buildPhotoBed(f,x,y,box,group) {
 // Photo references only. These scene details leave the established 2D layout
 // and stored furniture untouched. Coordinates and dimensions are provisional.
 const sceneDetails = {
-  living:{id:'living-photo-sofa', box:[163,7,223,82], height:91, source:'PUBLIC-05–08'},
   dining:{id:'entry-wall-clock', centerX:644, centerHeight:188, width:77, height:65, source:'PUBLIC-09'}
 };
 let clockArtwork;
 
-function buildLivingSofa(detail,[x,y],box,group) {
-  const [px,py,w,d]=detail.box, h=detail.height;
+function buildLivingSofa(f,[x,y],box,group) {
+  const [px,py,h]=[f.x,f.y,f.h], turns=((f.turns||0)%4+4)%4;
+  const [w,d]=turns%2 ? [f.d,f.w] : [f.w,f.d];
   const wood='#67412e', edge='#4f3225', seat='#79523e';
   function add(u,v,width,depth,bottom,top,color) {
-    return box(x+px+u,y+py+v,width,depth,top-bottom,color,bottom,1,group);
+    const [dx,dy,pxw,pyd]=[
+      [u,v,width,depth],
+      [d-v-depth,u,depth,width],
+      [w-u-width,d-v-depth,width,depth],
+      [v,w-u-width,depth,width]
+    ][turns];
+    return box(x+px+dx,y+py+dy,pxw,pyd,top-bottom,color,bottom,1,group);
   }
   for (const u of [7,w-15]) {
     for (const v of [8,d-13]) add(u,v,8,7,0,h*.22,edge);
@@ -732,6 +755,7 @@ function buildLivingSofa(detail,[x,y],box,group) {
     back.geometry=new three.ExtrudeGeometry(outline,{depth:.05,bevelEnabled:false});
     back.geometry.translate(0,0,-.025);
     back.rotation.x=-.13;
+    back.rotation.y=turns*Math.PI/2;
   }
   for (const u of [0,w-9]) {
     add(u,7,9,d-11,h*.40,h*.58,wood);
@@ -984,6 +1008,7 @@ async function build3() {
         group.userData.furniture={room:key,id:f.id};
         model.add(group);
         if (f.model === 'photo-bed') buildPhotoBed(f,x,y,box,group);
+        else if (f.model === 'photo-sofa') buildLivingSofa(f,[x,y],box,group);
         else box(x+f.x,y+f.y,f.w,f.d,f.h,f.c,0,1,group);
         if (current===key && selected===f.id) {
           for (const mesh of group.children) {
@@ -1089,8 +1114,7 @@ async function build3() {
       const group=new three.Group();
       group.name=detail.id;
       model.add(group);
-      if (key==='living') buildLivingSofa(detail,plan.rooms[key].box,box,group);
-      else buildEntryClock(detail,viewBox(),group,wallLayers);
+      buildEntryClock(detail,viewBox(),group,wallLayers);
     }
     size3d();
     if (frameKey !== current) frame3d();
@@ -1179,7 +1203,7 @@ $('rotate').onclick = () => {
   }
   applyEdit(()=>{
     [f.w,f.d]=[f.d,f.w];
-    if (f.model==='photo-bed') f.turns=((f.turns || 0)+1)%4;
+    if (f.model==='photo-bed' || f.model==='photo-sofa') f.turns=((f.turns || 0)+1)%4;
     setPosition(f,current,f.x,f.y);
   });
 };
