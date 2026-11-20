@@ -147,9 +147,14 @@ summary { cursor: pointer; font-weight: 600; border-radius: 6px; }
   .view { height:auto; min-height:0; }
   .stage { grid-template-rows:auto minmax(0,1fr) auto; }
 }
+ .sofa-bed-controls { margin-top:12px; padding:10px 0 0; border-top:1px solid var(--line); }
+.sofa-bed-controls .sofa-depths { margin-top:8px; }
+#sofaBedFeedback { margin:7px 0; line-height:1.5; }
+.furniture .expanded-area, .furniture.selected .expanded-area { fill:#5d819946; stroke:#365e75; stroke-width:1.25; stroke-dasharray:4 3; vector-effect:non-scaling-stroke; pointer-events:none; }
+.mirror-front {stroke:#365e75;stroke-width:1.5;vector-effect:non-scaling-stroke;pointer-events:none}
 </style></head><body>
 <header class="app-header">
-  <div class="brand"><span class="brand-mark" aria-hidden="true">⌂</span><strong>MY HOME</strong><span class="editor-version">V5.0</span></div>
+  <div class="brand"><span class="brand-mark" aria-hidden="true">⌂</span><strong>MY HOME</strong><span class="editor-version">V5.1</span></div>
   <div id="workspaceContext" class="workspace-context">全屋户型</div>
   <div class="history-actions"><button id="undo" title="Ctrl / ⌘ + Z">撤销</button><button id="redo" title="Ctrl / ⌘ + Shift + Z">重做</button></div>
   <div class="save-actions"><span id="saveStatus" class="dim" role="status"></span><button id="save">保存</button></div>
@@ -185,6 +190,11 @@ summary { cursor: pointer; font-weight: 600; border-radius: 6px; }
     <div class="inspector-heading"><h2>家具属性</h2><button id="clearSelection" type="button" aria-label="取消选中">×</button></div>
     <div id="editor">
       <label for="name">名称</label><input id="name">
+      <section id="sofaBedControls" class="sofa-bed-controls" hidden aria-label="沙发床状态">
+        <label for="sofaBedState">沙发床状态</label><select id="sofaBedState"><option value="folded">收起 · 实拍</option><option value="expanded">展开 · 占地实验</option></select>
+        <div class="row sofa-depths"><div><label for="foldedDepth">收起进深 cm</label><input id="foldedDepth" type="number" min="1" step="0.1"></div><div><label for="expandedDepth">展开进深 cm</label><input id="expandedDepth" type="number" min="1" step="0.1"></div></div>
+        <p id="sofaBedFeedback" class="hint" role="status"></p>
+      </section>
       <div class="field-label">尺寸 <span>cm</span></div>
       <div class="row"><div><label for="fw">宽</label><input id="fw" type="number"></div><div><label for="fd">深</label><input id="fd" type="number"></div><div><label for="fh">高</label><input id="fh" type="number"></div></div>
       <div class="field-label">位置 <span>cm</span></div>
@@ -465,6 +475,97 @@ function navigateHistory(direction) {
   save();
   sync();
   $('status').textContent=direction==='undo' ? '已撤销上一步' : '已重做上一步';
+}
+
+const isStudioSofa = item => item?.model==='photo-studio-sofa';
+const sofaDepthAxis = item => (item.turns || 0)%2 ? 'w' : 'd';
+
+function sofaBedSettings(item) {
+  if (item.sofaBed) return item.sofaBed;
+  const foldedDepth=item[sofaDepthAxis(item)];
+  // A sample footprint for experiments; old layouts retain their existing depth.
+  return {state:'folded',foldedDepth,expandedDepth:Math.max(155,Math.round((foldedDepth+1)*10)/10)};
+}
+
+function sofaFootprintAtDepth(item,depth) {
+  const axis=sofaDepthAxis(item);
+  const delta=Math.round((depth-item[axis])*10)/10;
+  const turns=item.turns || 0;
+  const next={x:item.x,y:item.y,w:item.w,d:item.d};
+  next[axis]=depth;
+  // Keep the rear edge fixed when the forward edge is in the negative direction.
+  if (turns===1) next.x=Math.round((next.x-delta)*10)/10;
+  if (turns===2) next.y=Math.round((next.y-delta)*10)/10;
+  return next;
+}
+
+function editSofaBed(item,settings,message) {
+  const selectedDepth=settings.state==='expanded' ? settings.expandedDepth : settings.foldedDepth;
+  const next=sofaFootprintAtDepth(item,selectedDepth);
+  const [, ,width,depth]=plan.rooms[current].box;
+  if (next.x<0 || next.y<0 || next.x+next.w>width+.0001 || next.y+next.d>depth+.0001) {
+    sync(true);
+    $('status').textContent='当前摆位放不下这个状态，请先移动沙发床或调整进深。';
+    return;
+  }
+  applyEdit(()=>Object.assign(item,next,{sofaBed:settings}),message);
+}
+
+function setSofaBedDepth(item,field,value) {
+  const settings={...sofaBedSettings(item),[field]:Math.round(value*10)/10};
+  const [, ,width,depth]=plan.rooms[current].box;
+  const axisLimit=sofaDepthAxis(item)==='w' ? width : depth;
+  const changed=settings[field];
+  if (!Number.isFinite(changed) || changed<1 || changed>axisLimit || settings.expandedDepth<=settings.foldedDepth) {
+    sync(true);
+    $('status').textContent='请输入房间范围内的正数，展开进深须大于收起进深。';
+    return;
+  }
+  editSofaBed(item,settings,'已更新暂定进深 · 可撤销');
+}
+
+function updateSofaBedInspector(item) {
+  $('sofaBedControls').hidden=!isStudioSofa(item);
+  if (!isStudioSofa(item)) return;
+  const settings=sofaBedSettings(item);
+  $('sofaBedState').value=settings.state;
+  $('foldedDepth').value=settings.foldedDepth;
+  $('expandedDepth').value=settings.expandedDepth;
+  const info=$('sofaBedFeedback');
+  info.textContent='宽约 200 cm。两种进深和展开机构均暂定。';
+  if (settings.state!=='expanded') return;
+  const addedDepth=settings.expandedDepth-settings.foldedDepth;
+  info.textContent+=' 蓝色区域为展开增加的占地（'+addedDepth.toFixed(1)+' cm 进深）。';
+  const overlap=furnitureCollisions(current).get(String(item.id)) || [];
+  if (overlap.length) info.textContent+=' 占地重叠：'+[...new Set(overlap)].join('、')+'。';
+  const mirror=furniture(current).find(f=>f.model==='photo-studio-mirror');
+  const fixed=roomObstacles(current,item.id).filter(o=>o.kind==='fixed')
+    .map(o=>({...o,gap:rectangleGap(item,o)})).sort((a,b)=>a.gap-b.gap)[0];
+  if (mirror) info.textContent+=' 到落地镜 '+rectangleGap(item,mirror).toFixed(1)+' cm。';
+  if (fixed) info.textContent+=' 到最近固定柜 '+fixed.gap.toFixed(1)+' cm。';
+  if (mirror || fixed) info.textContent+=' 以上为平面占地间距。';
+}
+
+function mirrorFront(item) {
+  if (item.model!=='photo-studio-mirror' || selected!==item.id || current!=='studio') return '';
+  const {w,d}=item, turns=item.turns || 0;
+  const inset=Math.min(w,d)*.09;
+  const line=[
+    [w*.22,d-inset,w*.78,d-inset],[inset,d*.22,inset,d*.78],
+    [w*.22,inset,w*.78,inset],[w-inset,d*.22,w-inset,d*.78]
+  ][turns];
+  return `<line class="mirror-front" aria-label="镜面朝向" x1="${line[0]}" y1="${line[1]}" x2="${line[2]}" y2="${line[3]}"/>`;
+}
+
+function expandedArea(item) {
+  if (!isStudioSofa(item) || item.sofaBed?.state!=='expanded') return '';
+  const closed=sofaFootprintAtDepth(item,item.sofaBed.foldedDepth);
+  const turns=item.turns || 0;
+  const axis=sofaDepthAxis(item), added=item[axis]-closed[axis];
+  const x=turns===3 ? closed.x+closed.w : item.x;
+  const y=turns===0 ? closed.y+closed.d : item.y;
+  const w=axis==='w' ? added : item.w, d=axis==='d' ? added : item.d;
+  return `<rect class="expanded-area" aria-label="展开增加的占地" x="${x-item.x}" y="${y-item.y}" width="${w}" height="${d}"/>`;
 }
 
 function setPosition(item,key,x,y) {
@@ -789,9 +890,10 @@ function draw() {
   const movable = keys.flatMap(key => {
     const [ox,oy] = plan.rooms[key].box;
     return furniture(key).map(f => {
-      const chars=[...f.n], limit=Math.floor((f.w-12)/12);
-      const caption=limit<2 ? '' : chars.length>limit ? chars.slice(0,limit-1).join('')+'…' : f.n;
-      return `<g class="furniture${current === key && selected === f.id ? ' selected' : ''}${collisionsByRoom[key].has(String(f.id)) ? ' collision' : ''}" data-id="${f.id}" data-owner="${key}" transform="translate(${ox+f.x} ${oy+f.y})"><title>${escape(f.n)}</title><rect width="${f.w}" height="${f.d}" rx="3" fill="${escape(f.c)}"/>${f.d>=20 && caption ? `<text x="6" y="17">${escape(caption)}</text>` : ''}</g>`;
+      const name=isStudioSofa(f) && f.n===studioReferences.addStudioSofa.n && f.sofaBed?.state==='expanded' ? '实拍沙发床 · 展开' : f.n;
+      const chars=[...name], limit=Math.floor((f.w-12)/12);
+      const caption=limit<2 ? '' : chars.length>limit ? chars.slice(0,limit-1).join('')+'…' : name;
+      return `<g class="furniture${current === key && selected === f.id ? ' selected' : ''}${collisionsByRoom[key].has(String(f.id)) ? ' collision' : ''}" data-id="${f.id}" data-owner="${key}" transform="translate(${ox+f.x} ${oy+f.y})"><title>${escape(f.n)}</title><rect width="${f.w}" height="${f.d}" rx="3" fill="${escape(f.c)}"/>${expandedArea(f)}${mirrorFront(f)}${f.d>=20 && caption ? `<text x="6" y="17">${escape(caption)}</text>` : ''}</g>`;
     });
   });
   $('plan').innerHTML = `<svg role="img" aria-label="住宅平面图，细部尺寸暂定" preserveAspectRatio="xMidYMid meet" viewBox="${viewX} ${viewY} ${shownW} ${shownH}">${[
@@ -885,6 +987,7 @@ function sync(selectionOnly=false) {
   const room = plan.rooms[current], f = selectedItem(), layout=data.rooms[current];
   $('workspace').classList.toggle('has-selection',Boolean(f));
   $('inspector').hidden=!f;
+  updateSofaBedInspector(f);
   $('placedFurniture').hidden=!layout || !furniture(current).length;
   $('workspaceContext').textContent=layout ? plan.rooms[current].name+' / '+schemeLabel(layout,layout.active) : '全屋户型';
   $('schemes').hidden=!layout;
@@ -1448,6 +1551,10 @@ function studioFurnitureParts(f,[x,y],box,group) {
 }
 
 function buildStudioSofa(f,origin,box,group) {
+  if (f.sofaBed?.state==='expanded') {
+    buildExpandedStudioSofa(f,origin,box,group);
+    return;
+  }
   const {width:w,depth:d,height:h,part,profile}=studioFurnitureParts(f,origin,box,group);
   const wood='#382921', beam='#4b3328', cushion='#d8cec2';
   const arm=w*.055, section=(w-2*arm)/3;
@@ -1463,6 +1570,27 @@ function buildStudioSofa(f,origin,box,group) {
     profile(u+section*.012,d*.10,section*.976,d*.16,h*.50,h,cushion);
     profile(u+section*.045,d*.27,section*.91,d*.24,h*.52,h*.59,'#ede4d9');
   }
+}
+
+function buildExpandedStudioSofa(f,origin,box,group) {
+  const {width:w,depth:d,height:h,part,profile}=studioFurnitureParts(f,origin,box,group);
+  const rear=f.sofaBed.foldedDepth, extension=d-rear;
+  const arm=w*.055, inner=w-2*arm, supportDepth=Math.min(d*.04,extension*.38);
+  const wood='#382921', beam='#4b3328', cushion='#d8cec2';
+  // Keep the original arm assembly and represent the sleeping surface over
+  // two supported decks. This is a footprint study, with no assumed hardware.
+  part(arm,0,inner,rear*.13,h*.34,h*.79,wood);
+  for (const u of [0,w-arm]) {
+    part(u,rear*.07,arm,rear*.87,h*.42,h*.65,wood);
+    for (const v of [rear*.07,rear*.84]) part(u,v,arm,rear*.10,0,h*.43,wood);
+  }
+  part(arm,rear*.08,inner,rear*.92,h*.13,h*.37,beam);
+  part(arm,rear,inner,extension,h*.22,h*.37,beam);
+  for (const x of [arm, w-2*arm]) part(x,d-supportDepth,arm,supportDepth,0,h*.22,wood);
+  const headInset=rear*.14, seam=Math.min(.8,extension*.15);
+  profile(arm,headInset,inner,rear-headInset-seam,h*.37,h*.51,cushion);
+  profile(arm,rear,inner,extension,h*.37,h*.51,cushion);
+  profile(arm+inner*.25,headInset,inner*.50,Math.min(rear*.26,18),h*.51,h*.58,'#ede4d9');
 }
 
 function buildStudioMirror(f,origin,box,group) {
@@ -1850,6 +1978,19 @@ async function build3() {
 $('room').replaceChildren(new Option('全屋户型','all'),...Object.entries(plan.rooms).map(([key,r]) => new Option(label(r),key)));
 $('room').onchange = e => selectRoom(e.target.value);
 $('saveStatus').textContent='自动保存到本机';
+$('sofaBedState').onchange=e=>{
+  const item=selectedItem();
+  if (!isStudioSofa(item)) return;
+  const state=e.target.value;
+  if (state===sofaBedSettings(item).state) return;
+  editSofaBed(item,{...sofaBedSettings(item),state},state==='expanded' ? '沙发床已展开 · 可撤销' : '沙发床已收起 · 可撤销');
+};
+for (const field of ['foldedDepth','expandedDepth']) {
+  $(field).onchange=e=>{
+    const item=selectedItem();
+    if (isStudioSofa(item)) setSofaBedDepth(item,field,e.target.valueAsNumber);
+  };
+}
 $('items').onchange = e => {
   const item=furniture(current).find(f=>String(f.id)===e.target.value);
   e.target.blur();
@@ -1866,6 +2007,11 @@ for (const [id,key] of Object.entries({name:'n',fw:'w',fd:'d',fh:'h',fx:'x',fy:'
       return;
     }
     const value=input.valueAsNumber;
+    if (isStudioSofa(f) && key===sofaDepthAxis(f)) {
+      const field=sofaBedSettings(f).state==='expanded' ? 'expandedDepth' : 'foldedDepth';
+      setSofaBedDepth(f,field,value);
+      return;
+    }
     const [, ,width,depth]=plan.rooms[current].box;
     const limit={w:width,d:depth,h:1000,x:width-f.w,y:depth-f.d}[key];
     const minimum=key==='x' || key==='y' ? 0 : 1;
