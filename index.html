@@ -611,6 +611,7 @@ function dragFurniture(event, el) {
   let nextX=originalX, nextY=originalY, moved=false;
   svg.querySelector('.furniture.selected')?.classList.remove('selected');
   el.classList.add('selected');
+  if(document.activeElement instanceof HTMLElement && document.activeElement.matches('input,textarea,select')) document.activeElement.blur();
   $('status').textContent=`正在调整：${f.n}`;
   const liveDimensions=svg.querySelector('#liveDimensions');
   if(liveDimensions) liveDimensions.innerHTML=dimensionOverlay(key,f);
@@ -1497,7 +1498,7 @@ async function build3() {
 
 $('room').replaceChildren(new Option('全屋户型','all'),...Object.entries(plan.rooms).map(([key,r]) => new Option(label(r),key)));
 $('room').onchange = e => selectRoom(e.target.value);
-$('items').onchange = e => { selected = furniture(current).find(f => String(f.id) === e.target.value)?.id ?? null; sync(); };
+$('items').onchange = e => { selected = furniture(current).find(f => String(f.id) === e.target.value)?.id ?? null; e.target.blur(); sync(); };
 for (const [id,key] of Object.entries({name:'n',fw:'w',fd:'d',fh:'h',fx:'x',fy:'y',color:'c'})) {
   $(id).onchange = e => {
     const f=selectedItem();
@@ -1642,12 +1643,14 @@ document.addEventListener('keydown',event=>{
   if(event.key!=='Delete' && event.key!=='Backspace') return;
   if(event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
   const target=event.target;
-  if(target instanceof Element && target.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]')) return;
+  if(target instanceof Element && target.closest('input:not([type="button"]),textarea,[contenteditable="true"],[role="textbox"]')) return;
   if(!selectedItem()) return;
   event.preventDefault();
+  event.stopPropagation();
   removeSelectedFurniture();
 });
 $('remove').onclick = removeSelectedFurniture;
+$('remove').title='删除选中家具（Delete / Backspace）';
 $('reset').onclick = () => {
   if (!confirm('恢复当前方案到本机初始布局？此操作可撤销。')) return;
   applyEdit(()=>{
