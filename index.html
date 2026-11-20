@@ -168,6 +168,8 @@ function loadLayouts() {
   const rooms = {};
   for (const room of Object.keys(plan.rooms)) {
     let baseline = Array.isArray(source[room]) ? structuredClone(source[room]) : [];
+    // Keep the real sofa in a living room migrated from legacy v3.2 as well.
+    if (room === 'living' && !baseline.some(item=>item.id===referenceLivingSofa.id)) baseline.push(structuredClone(referenceLivingSofa));
     if (room === 'studio') baseline = baseline.filter(item => !retiredStudioPlaceholders.some(placeholder =>
       Object.keys(item).length === Object.keys(placeholder).length &&
       Object.entries(placeholder).every(([field,value]) => item[field] === value)));
