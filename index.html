@@ -170,14 +170,19 @@ summary { cursor: pointer; font-weight: 600; border-radius: 6px; }
 .asset-dialog input[type=file]{width:100%;font-size:12px}
 .asset-notice{margin:5px 0;font-size:12px;color:#555}
 .asset-notice:empty{display:none}
+.backup-actions{display:grid;gap:6px;margin-top:8px}
+.backup-actions h3{margin:0;font-size:14px}
+#startupStatus:empty{display:none}
+#startupStatus{padding:8px 16px}
 </style></head><body>
-<header class="app-header">
-  <div class="brand"><span class="brand-mark" aria-hidden="true">⌂</span><strong>MY HOME</strong><span class="editor-version">V5.2</span></div>
+<p id="startupStatus" role="alert"></p>
+<header class="app-header" inert>
+  <div class="brand"><span class="brand-mark" aria-hidden="true">⌂</span><strong>MY HOME</strong><span class="editor-version">V5.3</span></div>
   <div id="workspaceContext" class="workspace-context">全屋户型</div>
   <div class="history-actions"><button id="undo" title="Ctrl / ⌘ + Z">撤销</button><button id="redo" title="Ctrl / ⌘ + Shift + Z">重做</button></div>
   <div class="save-actions"><span id="saveStatus" class="dim" role="status"></span><button id="save">保存</button></div>
 </header>
-<div class="layout" id="workspace">
+<div class="layout" id="workspace" inert>
   <aside class="library" aria-label="空间与家具库">
     <section class="panel-section"><label class="section-title" for="room">空间</label><select id="room" aria-label="查看范围"></select></section>
     <section class="panel-section furniture-library">
@@ -193,7 +198,16 @@ summary { cursor: pointer; font-weight: 600; border-radius: 6px; }
       <div id="placedFurniture" hidden><label for="items">当前布局的家具</label><select id="items"></select></div>
     </section>
     <details class="panel-section" id="schemePanel"><summary>方案管理</summary><section id="schemes" hidden><label for="scheme">布局方案</label><select id="scheme"></select><button id="copyScheme" type="button">复制当前方案</button><div class="scheme-notes"><label for="schemeName">方案名称</label><input id="schemeName" maxlength="32" placeholder="如：保留阳台通道"><label for="schemeNote">方案备注</label><textarea id="schemeNote" maxlength="280" rows="2" placeholder="记下这个布局的用途或取舍"></textarea><button id="saveSchemeNotes" type="button" disabled>保存方案笔记</button></div><div id="comparisonControls" hidden><label for="comparisonSlot">叠图对比 · 2D</label><select id="comparisonSlot"></select><p id="comparisonSummary" class="hint" aria-live="polite"></p></div></section><button id="reset">恢复当前空间</button></details>
-    <details class="panel-section"><summary>房屋信息</summary><div id="roomdims" class="hint"></div></details>
+    <details class="panel-section"><summary>房屋信息</summary><div id="roomdims" class="hint"></div>
+      <section class="backup-actions" aria-label="数据管理">
+        <h3>数据管理</h3><small id="backupTime" class="dim"></small>
+        <button type="button" id="exportHome" disabled>备份我的家</button>
+        <button type="button" id="importHome" disabled>从备份恢复</button>
+        <button type="button" id="downloadCheckpoint" disabled hidden>下载上次恢复前副本</button>
+        <input type="file" id="backupFile" accept=".json,application/json" hidden>
+        <p id="backupStatus" class="asset-notice" role="status"></p>
+      </section>
+    </details>
   </aside>
   <main class="stage">
     <div class="bar" aria-label="画布工具">
@@ -250,6 +264,14 @@ summary { cursor: pointer; font-weight: 600; border-radius: 6px; }
     <p class="asset-notice" id="assetError" role="alert"></p>
     <div class="dialog-actions"><button type="button" id="cancelAsset">取消</button><button type="submit" class="primary" id="saveAsset">保存到家具库</button></div>
   </form>
+</dialog>
+<dialog id="restoreDialog" class="asset-dialog" aria-labelledby="restoreTitle">
+  <h2 id="restoreTitle">从备份恢复</h2>
+  <p id="restoreSummary"></p>
+  <p>确认后将替换本机全部房间方案和家具资产。系统会先保存当前数据的本机副本。</p>
+  <p>请关闭其他已打开的 MY HOME 标签页，避免旧布局随后写回。</p>
+  <p id="restoreStatus" class="asset-notice" role="status"></p>
+  <div class="dialog-actions"><button type="button" id="cancelRestore" autofocus>取消</button><button type="button" class="primary" id="confirmRestore">确认替换</button></div>
 </dialog>
 <script>
 'use strict';
@@ -430,7 +452,7 @@ function loadLayouts() {
   return {version:2,rooms};
 }
 
-const data = loadLayouts();
+let data = loadLayouts();
 const histories = new Map();
 let current = 'all', selected = null, mode = '2';
 let deferSceneRefresh=false;
@@ -2119,7 +2141,7 @@ $('copyScheme').onclick = () => {
 $('undo').onclick = () => navigateHistory('undo');
 $('redo').onclick = () => navigateHistory('redo');
 document.addEventListener('keydown',event=>{
-  if ($('assetDialog').open || !(event.ctrlKey || event.metaKey) || event.altKey ||
+  if ($('restoreDialog').open || $('assetDialog').open || !(event.ctrlKey || event.metaKey) || event.altKey ||
     event.target.closest('input,textarea,select,[contenteditable]')) return;
   const key=event.key.toLowerCase();
   if (key!=='z' && key!=='y') return;
@@ -2285,21 +2307,340 @@ $('assetForm').onsubmit=async event=>{
   }
 };
 
-async function loadAssets() {
-  try {
-    assetDatabase=await new Promise((resolve,reject)=>{
-      const request=indexedDB.open('myhome-furniture-assets',1);
-      request.onupgradeneeded=()=>request.result.createObjectStore('furniture',{keyPath:'id'});
-      request.onsuccess=()=>resolve(request.result);
-      request.onerror=request.onblocked=()=>reject(request.error);
-    });
-    await showAssets();
-    $('newAsset').disabled=false;
-  } catch {
-    $('assetNotice').textContent='无法打开本机家具库，请检查浏览器存储权限。';
+const backupFormat='my-home-backup';
+const backupLimit=64*1024*1024;
+const backupTimeKey='myhome-last-backup';
+const imageTypes=['image/jpeg','image/png','image/webp'];
+const restoreKey='previous-restore';
+let pendingImport;
+
+const record=value=>value!==null && typeof value==='object' && !Array.isArray(value);
+const validId=id=>Number.isSafeInteger(id) || (typeof id==='string' && /^[\w-]{1,128}$/.test(id));
+const positive=value=>Number.isFinite(value) && value>0;
+const validColor=value=>typeof value==='string' && /^#[\da-f]{6}$/i.test(value);
+
+function validateBackup(layouts,assets) {
+  const ids=new Set();
+  for(const asset of assets){
+    if(!record(asset) || typeof asset.id!=='string' || !validId(asset.id) || ids.has(asset.id) ||
+      !['name','category'].every(key=>typeof asset[key]==='string' && asset[key].trim()) ||
+      !['已购买','考虑购买'].includes(asset.purchase) ||
+      !['width','depth','height'].every(key=>positive(asset[key])) || !validColor(asset.color))
+      throw new Error('家具资产资料缺失、重复或格式错误。');
+    if(asset.photo!==null && (!(asset.photo instanceof Blob) || !imageTypes.includes(asset.photo.type) || !asset.photo.size))
+      throw new Error('家具照片缺失或格式不受支持。');
+    ids.add(asset.id);
+  }
+
+  if(!record(layouts) || layouts.version!==2 || !record(layouts.rooms) ||
+    Object.keys(layouts.rooms).length!==Object.keys(plan.rooms).length)
+    throw new Error('房间布局版本或资料不完整。');
+  function validateItems(items) {
+    if(!Array.isArray(items)) throw new Error('方案缺少家具列表。');
+    const itemIds=new Set();
+    for(const item of items){
+      if(!record(item) || !validId(item.id) || itemIds.has(String(item.id)) || typeof item.n!=='string' ||
+        !['x','y'].every(key=>Number.isFinite(item[key])) ||
+        !['w','d','h'].every(key=>positive(item[key])) || !validColor(item.c) ||
+        (Object.hasOwn(item,'assetId') && !ids.has(item.assetId)))
+        throw new Error('布局家具资料缺失、重复，或引用了不存在的资产。');
+      if(Object.hasOwn(item,'sofaBed')){
+        const sofa=item.sofaBed;
+        if(!record(sofa) || !['folded','expanded'].includes(sofa.state) || !positive(sofa.foldedDepth) ||
+          !positive(sofa.expandedDepth) || sofa.expandedDepth<=sofa.foldedDepth ||
+          item[sofaDepthAxis(item)]!==(sofa.state==='expanded' ? sofa.expandedDepth : sofa.foldedDepth))
+          throw new Error('沙发床状态或进深资料不完整。');
+      }
+      itemIds.add(String(item.id));
+    }
+  }
+  for(const key of Object.keys(plan.rooms)){
+    const room=layouts.rooms[key];
+    if(!record(room) || !record(room.variants) || !Object.keys(room.variants).every(slot=>slots.includes(slot)) ||
+      !slots.includes(room.active) || !Object.hasOwn(room.variants,room.active))
+      throw new Error('房间或 A/B/C 方案不完整。');
+    validateItems(room.baseline);
+    Object.values(room.variants).forEach(validateItems);
+    if(Object.hasOwn(room,'metadata')){
+      if(!record(room.metadata) || Object.entries(room.metadata).some(([slot,entry])=>
+        !slots.includes(slot) || !record(entry) ||
+        !['name','note'].every(field=>typeof entry[field]==='string')))
+        throw new Error('方案名称或备注格式错误。');
+    }
   }
 }
-loadAssets();
+
+async function readHomeSnapshot(){
+  const saved=localStorage.getItem(storageKey);
+  let layouts;
+  if(saved!==null){
+    let stored;
+    try { stored=JSON.parse(saved); }
+    catch { throw new Error('无法解析本机布局存档。'); }
+    if(!record(stored) || ![1,2].includes(stored.version) || !record(stored.rooms))
+      throw new Error('无法读取本机布局存档。');
+    layouts=stored.version===2 ? stored : loadLayouts();
+  }else{
+    const legacy=localStorage.getItem('myhome-v32');
+    if(legacy!==null){
+      try {
+        if(!record(JSON.parse(legacy)?.f)) throw new Error();
+      } catch { throw new Error('无法读取旧版布局存档。'); }
+    }
+  }
+  if($('saveStatus').hasAttribute('data-failed')) throw new Error('当前布局尚未保存，请先重试保存。');
+  const assets=await assetStore('readonly',store=>store.getAll());
+  layouts ??= structuredClone(data);
+  validateBackup(layouts,assets);
+  return {layouts,assets};
+}
+
+async function checksum(payload){
+  const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(payload));
+  return Array.from(new Uint8Array(hash),byte=>byte.toString(16).padStart(2,'0')).join('');
+}
+
+async function checkPhoto(photo) {
+  try {
+    const image=await createImageBitmap(photo);
+    image.close();
+  } catch {
+    throw new Error('备份中有无法读取的家具照片。');
+  }
+}
+
+async function encodeBackup(snapshot){
+  validateBackup(snapshot.layouts,snapshot.assets);
+  const photos={};
+  const assets=[];
+  let total=0;
+  for(const {photo,...asset} of snapshot.assets){
+    const photoId=photo ? 'photo-'+assets.length : null;
+    assets.push({...asset,photoId});
+    if(!photo) continue;
+    total+=photo.size;
+    if(total>backupLimit*.6) throw new Error('照片总量过大，无法生成 64 MB 以内的备份。');
+    await checkPhoto(photo);
+    const bytes=new Uint8Array(await photo.arrayBuffer());
+    let binary='';
+    for(let start=0;start<bytes.length;start+=8192) binary+=String.fromCharCode(...bytes.subarray(start,start+8192));
+    photos[photoId]={type:photo.type,bytes:btoa(binary)};
+  }
+  const payload=JSON.stringify({createdAt:new Date().toISOString(),layouts:snapshot.layouts,assets,photos});
+  const file=new Blob([JSON.stringify({format:backupFormat,version:1,sha256:await checksum(payload),payload})],
+    {type:'application/json'});
+  if(file.size>backupLimit) throw new Error('备份超过 64 MB。');
+  return file;
+}
+
+async function decodeBackup(file){
+  if(file.size>backupLimit) throw new Error('备份文件超过 64 MB。');
+  let envelope;
+  try { envelope=JSON.parse(await file.text()); }
+  catch { throw new Error('文件损坏，或不是 MY HOME 备份。'); }
+  if(envelope?.format!==backupFormat || envelope.version!==1)
+    throw new Error('不支持的备份格式或版本。');
+  if(typeof envelope.payload!=='string' || envelope.sha256!==await checksum(envelope.payload))
+    throw new Error('备份校验失败，文件可能已损坏。');
+  const body=JSON.parse(envelope.payload);
+  if(!record(body) || !Array.isArray(body.assets) || !record(body.photos) || !Number.isFinite(Date.parse(body.createdAt)))
+    throw new Error('备份清单不完整。');
+  const used=new Set();
+  const assets=[];
+  for(const entry of body.assets){
+    if(!record(entry)) throw new Error('备份中的家具资料无效。');
+    const {photoId,...asset}=entry;
+    let photo=null;
+    if(photoId!==null){
+      const source=Object.hasOwn(body.photos,photoId) && body.photos[photoId];
+      if(typeof photoId!=='string' || used.has(photoId) || !record(source) ||
+        !imageTypes.includes(source.type) || typeof source.bytes!=='string' || !source.bytes)
+        throw new Error('备份缺少家具照片，或照片清单有误。');
+      let bytes;
+      try { bytes=Uint8Array.from(atob(source.bytes),char=>char.charCodeAt(0)); }
+      catch { throw new Error('家具照片编码损坏。'); }
+      photo=new Blob([bytes],{type:source.type});
+      await checkPhoto(photo);
+      used.add(photoId);
+    }
+    assets.push({...asset,photo});
+  }
+  if(used.size!==Object.keys(body.photos).length) throw new Error('备份照片与资产清单不一致。');
+  validateBackup(body.layouts,assets);
+  return {layouts:body.layouts,assets};
+}
+
+function backupStore(mode,operation){
+  return new Promise((resolve,reject)=>{
+    const tx=assetDatabase.transaction(['furniture','backup'],mode);
+    const request=operation(tx.objectStore('furniture'),tx.objectStore('backup'));
+    tx.oncomplete=()=>resolve(request?.result);
+    tx.onabort=()=>reject(tx.error);
+  });
+}
+
+const getCheckpoint=()=>backupStore('readonly',(_,backup)=>backup.get(restoreKey));
+
+function writeRestoreAssets(assets,checkpoint){
+  return backupStore('readwrite',(store,backup)=>{
+    store.clear();
+    assets.forEach(asset=>store.put(asset));
+    backup.put(checkpoint,restoreKey);
+  });
+}
+
+async function settleRestore(checkpoint){
+  const settled={...checkpoint,pending:false,target:null};
+  if(localStorage.getItem(storageKey)===checkpoint.target){
+    await backupStore('readwrite',(_,backup)=>backup.put(settled,restoreKey));
+  }else{
+    await writeRestoreAssets(checkpoint.previous.assets,settled);
+  }
+}
+
+function downloadBackup(file,prefix){
+  const url=URL.createObjectURL(file);
+  const link=document.createElement('a');
+  link.href=url;
+  link.download=prefix+'-'+new Date().toISOString().slice(0,10)+'.myhome.json';
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+
+function updateBackupTime(){
+  let date;
+  try { date=Date.parse(localStorage.getItem(backupTimeKey)); } catch {}
+  $('backupTime').textContent=Number.isFinite(date) ? '上次生成备份：'+new Date(date).toLocaleString() : '本浏览器没有备份记录';
+}
+
+async function runBackupAction(action){
+  const buttons=['exportHome','importHome','downloadCheckpoint'].map($);
+  buttons.forEach(button=>button.disabled=true);
+  $('backupStatus').textContent='正在处理，请稍候…';
+  try { await action(); }
+  catch(error){ $('backupStatus').textContent=error?.message || '无法读取或写入本机数据，请重试。'; }
+  finally { buttons.forEach(button=>button.disabled=false); }
+}
+
+$('exportHome').onclick=()=>runBackupAction(async()=>{
+  downloadBackup(await encodeBackup(await readHomeSnapshot()),'MY-HOME');
+  try { localStorage.setItem(backupTimeKey,new Date().toISOString()); } catch {}
+  updateBackupTime();
+  $('backupStatus').textContent='备份文件已生成，请确认浏览器已保存下载。';
+});
+
+$('downloadCheckpoint').onclick=()=>runBackupAction(async()=>{
+  const checkpoint=await getCheckpoint();
+  if(!checkpoint) throw new Error('本机没有恢复前副本。');
+  downloadBackup(await encodeBackup(checkpoint.previous),'MY-HOME-before-restore');
+  $('backupStatus').textContent='已生成上次恢复前的副本下载。';
+});
+
+$('importHome').onclick=()=> $('backupFile').click();
+$('backupFile').onchange=event=>{
+  const file=event.target.files[0];
+  event.target.value='';
+  if(!file) return;
+  runBackupAction(async()=>{
+    pendingImport=await decodeBackup(file);
+    const rooms=Object.values(pendingImport.layouts.rooms);
+    const variants=rooms.flatMap(room=>Object.values(room.variants));
+    const assets=pendingImport.assets;
+    $('restoreSummary').textContent=`${rooms.length} 个房间、${variants.length} 个方案、${variants.flat().length} 件摆放实例、${assets.length} 项家具资产、${assets.filter(asset=>asset.photo).length} 张照片。`;
+    $('restoreStatus').textContent='';
+    $('backupStatus').textContent='文件校验已通过，等待确认。';
+    $('restoreDialog').showModal();
+  });
+};
+$('cancelRestore').onclick=()=> $('restoreDialog').close();
+$('restoreDialog').addEventListener('close',()=>{pendingImport=null;});
+$('restoreDialog').addEventListener('cancel',event=>{
+  if($('confirmRestore').disabled) event.preventDefault();
+});
+
+$('confirmRestore').onclick=async()=>{
+  if(!pendingImport) return;
+  const confirm=$('confirmRestore'),cancel=$('cancelRestore');
+  confirm.disabled=cancel.disabled=true;
+  $('restoreStatus').textContent='正在保存恢复前副本…';
+  try {
+    const previous=await readHomeSnapshot();
+    const checkpoint={previous,pending:true,target:JSON.stringify(pendingImport.layouts)};
+    // Assets and the recovery journal commit together before localStorage changes.
+    await writeRestoreAssets(pendingImport.assets,checkpoint);
+    try {
+      localStorage.setItem(storageKey,checkpoint.target);
+    } catch {
+      try {
+        await writeRestoreAssets(previous.assets,{...checkpoint,pending:false,target:null});
+        $('downloadCheckpoint').hidden=false;
+      } catch {
+        $('restoreStatus').textContent='恢复中断，安全副本仍在本机。正在重新打开以完成回滚…';
+        location.reload();
+        return;
+      }
+      throw new Error('布局写入失败，原布局和资产已保留。');
+    }
+    // If cleanup fails, startup reconciles the durable journal again.
+    await settleRestore(checkpoint).catch(()=>{});
+    $('restoreStatus').textContent='恢复完成，正在重新打开…';
+    try { sessionStorage.setItem('myhome-restored','1'); } catch {}
+    location.reload();
+    return;
+  } catch(error){
+    $('restoreStatus').textContent=error?.message || '恢复写入失败。原数据保留。';
+  }
+  confirm.disabled=cancel.disabled=false;
+};
+
+async function loadAssets() {
+  updateBackupTime();
+  let checkpoint;
+  try {
+    assetDatabase=await new Promise((resolve,reject)=>{
+      const request=indexedDB.open('myhome-furniture-assets',2);
+      request.onupgradeneeded=()=>{
+        if(!request.result.objectStoreNames.contains('furniture'))
+          request.result.createObjectStore('furniture',{keyPath:'id'});
+        request.result.createObjectStore('backup');
+      };
+      request.onsuccess=()=>{
+        request.result.onversionchange=()=>request.result.close();
+        resolve(request.result);
+      };
+      request.onerror=()=>reject(request.error);
+      request.onblocked=()=>reject(new Error('请关闭其他 MY HOME 标签页，然后刷新。'));
+    });
+    checkpoint=await getCheckpoint();
+    if(checkpoint?.pending){
+      await settleRestore(checkpoint);
+      data=loadLayouts();
+    }
+    await showAssets();
+    for(const id of ['newAsset','exportHome','importHome','downloadCheckpoint']) $(id).disabled=false;
+    $('downloadCheckpoint').hidden=!checkpoint;
+    const copyNotice='本机保留了上次恢复前的安全副本。';
+    if(checkpoint) $('backupStatus').textContent=copyNotice;
+    try {
+      if(sessionStorage.getItem('myhome-restored')==='1'){
+        sessionStorage.removeItem('myhome-restored');
+        $('startupStatus').textContent='恢复完成。'+copyNotice;
+      }
+    } catch {}
+  } catch(error) {
+    if(checkpoint?.pending){
+      $('startupStatus').textContent='上次恢复尚未完成，安全副本仍在本机。请检查浏览器存储权限并刷新。';
+      return;
+    }
+    $('assetNotice').textContent=error?.message || '无法打开本机家具库，请检查浏览器存储权限。';
+    $('backupStatus').textContent='家具资产存储不可用，无法完成备份或恢复。';
+  }
+  document.querySelector('header').inert=false;
+  $('workspace').inert=false;
+  setMode('2');
+}
 
 function addItem(item) {
   applyEdit(()=>{
@@ -2368,7 +2709,7 @@ function removeSelectedFurniture() {
 }
 // Capture phase handles keyboard shortcuts even when focus remains on an SVG or button.
 window.addEventListener('keydown',event=>{
-  if ($('assetDialog').open) return;
+  if ($('restoreDialog').open || $('assetDialog').open) return;
   if(event.key!=='Delete' && event.key!=='Backspace') return;
   if(event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
   const target=event.target;
@@ -2425,5 +2766,5 @@ $('kitchenfront').onclick = () => {
 $('b2').onclick = () => setMode('2');
 $('b3').onclick = () => setMode('3');
 window.addEventListener('resize',size3d);
-setMode('2');
+loadAssets();
 </script></body></html>
