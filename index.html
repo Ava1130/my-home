@@ -99,7 +99,11 @@ wall('h',790,1230,1350,['balcony'],[opening('window',1251,1305)]);
 // Evidence is independent of layout geometry: a local measurement never
 // replaces a room dimension or a saved furniture adjustment.
 const calibration = {
-  revision: 2,
+  revision: 3,
+  living: [{object:'living-photo-sofa',field:'appearance',status:'confirmed',source:'PUBLIC-05–08',
+    detail:'木沙发靠阳台一侧的客厅墙、面朝电视；外廓与离墙距离暂定'}],
+  dining: [{object:'entry-wall-clock',field:'appearance',status:'confirmed',source:'PUBLIC-09',
+    detail:'玄关矮柜上方的扇形壁钟；图案为照片近似，挂高及尺寸暂定'}],
   studio: [{object:'studio-l',field:'elevation',status:'confirmed',source:'P2–P3 / P10',
     detail:'固定 L 型书桌与衣柜相接，开放格只在书桌端；分段比例与尺寸暂定'}],
   master: [{object:'master-l',field:'elevation',status:'confirmed',source:'P13–P14 / P12',
@@ -402,7 +406,7 @@ function frame3d() {
   const distance = radius / Math.sin(halfAngle) * 1.06;
   controls.target.set(0,targetHeight,0);
   controls.maxDistance = Math.max(70, distance*2);
-  camera.position.set(.82,1.02,1).normalize().multiplyScalar(distance).add(controls.target);
+  camera.position.set(.82,1.02,['all','dining'].includes(current) ? -1 : 1).normalize().multiplyScalar(distance).add(controls.target);
   controls.update();
   frameKey = current;
 }
@@ -576,6 +580,122 @@ function buildPhotoBed(f,x,y,box) {
 
 // Elevation layouts use proportions within the accepted footprint. In each
 // elevation u increases left to right and v increases toward the viewer.
+// Photo references only. These scene details leave the established 2D layout
+// and stored furniture untouched. Coordinates and dimensions are provisional.
+const sceneDetails = {
+  living:{id:'living-photo-sofa', box:[163,7,223,82], height:91, source:'PUBLIC-05–08'},
+  dining:{id:'entry-wall-clock', centerX:644, centerHeight:188, width:77, height:65, source:'PUBLIC-09'}
+};
+let clockArtwork;
+
+function buildLivingSofa(detail,[x,y],box,group) {
+  const [px,py,w,d]=detail.box, h=detail.height;
+  const wood='#67412e', edge='#4f3225', seat='#79523e';
+  function add(u,v,width,depth,bottom,top,color) {
+    return box(x+px+u,y+py+v,width,depth,top-bottom,color,bottom,1,group);
+  }
+  for (const u of [7,w-15]) {
+    for (const v of [8,d-13]) add(u,v,8,7,0,h*.22,edge);
+  }
+  add(2,4,w-4,d-7,h*.16,h*.41,wood);
+  add(5,d-4,w-10,3,h*.20,h*.255,edge);
+  const seatWidth=(w-20)/2;
+  for (let i=0;i<2;i++) {
+    const u=10+i*seatWidth;
+    add(u+.35,12,seatWidth-.7,d-16,h*.40,h*.49,seat);
+    const back=add(u+.35,3,seatWidth-.7,5,h*.47,h*.98,wood);
+    const halfWidth=(seatWidth-.7)/200, halfHeight=h*.51/200, radius=.075;
+    const outline=new three.Shape();
+    outline.moveTo(-halfWidth,-halfHeight);
+    outline.lineTo(halfWidth,-halfHeight);
+    outline.lineTo(halfWidth,halfHeight-(i===1 ? radius : 0));
+    if (i===1) outline.quadraticCurveTo(halfWidth,halfHeight,halfWidth-radius,halfHeight);
+    outline.lineTo(-halfWidth+(i===0 ? radius : 0),halfHeight);
+    if (i===0) outline.quadraticCurveTo(-halfWidth,halfHeight,-halfWidth,halfHeight-radius);
+    outline.closePath();
+    back.geometry.dispose();
+    back.geometry=new three.ExtrudeGeometry(outline,{depth:.05,bevelEnabled:false});
+    back.geometry.translate(0,0,-.025);
+    back.rotation.x=-.13;
+  }
+  for (const u of [0,w-9]) {
+    add(u,7,9,d-11,h*.40,h*.58,wood);
+    add(u,7,9,d-12,h*.58,h*.66,seat);
+    add(u+1,d-10,7,5,h*.18,h*.64,edge);
+  }
+  const cushion=add(w*.38,d*.44,w*.20,d*.27,h*.49,h*.55,'#d8ccbb');
+  cushion.rotation.y=.22;
+}
+
+function entryClockTexture() {
+  if (clockArtwork) return clockArtwork;
+  const canvas=document.createElement('canvas');
+  canvas.width=768; canvas.height=640;
+  const g=canvas.getContext('2d');
+  function fan() {
+    g.beginPath(); g.moveTo(32,240);
+    g.quadraticCurveTo(193,61,384,62); g.quadraticCurveTo(575,61,736,240);
+    g.lineTo(534,411); g.quadraticCurveTo(384,321,234,411); g.closePath();
+  }
+  fan();
+  g.fillStyle='#e4e1d7'; g.fill();
+  g.save(); g.clip();
+  // Floral side inserts seen in PUBLIC-09, represented without the source photo.
+  for (const [fx,fy,size] of [[146,242,42],[201,300,28],[598,333,36],[644,282,24]]) {
+    for(let i=0;i<7;i++) {
+      const angle=i*Math.PI*2/7;
+      g.beginPath(); g.ellipse(fx+Math.cos(angle)*size*.47,fy+Math.sin(angle)*size*.47,size*.54,size*.29,angle,0,Math.PI*2);
+      g.fillStyle=i%2 ? '#d5b8a3' : '#e3cbb5'; g.fill();
+    }
+    g.beginPath(); g.arc(fx,fy,size*.15,0,Math.PI*2); g.fillStyle='#ad8c59'; g.fill();
+    g.beginPath(); g.ellipse(fx+size*.75,fy+size*.58,size*.52,size*.17,.7,0,Math.PI*2); g.fillStyle='#8f9167'; g.fill();
+  }
+  g.restore();
+  fan(); g.strokeStyle='#33261f'; g.lineWidth=18; g.stroke();
+  function disk(x,y,r,color) {
+    g.beginPath(); g.arc(x,y,r,0,2*Math.PI); g.fillStyle=color; g.fill();
+  }
+  disk(384,221,154,'#352b21');
+  disk(384,221,146,'#b89a53');
+  disk(384,221,134,'#e4cd8f');
+  disk(384,221,60,'#534b3a');
+  disk(384,221,44,'#b69a55');
+  g.fillStyle='#332820'; g.font='32px Georgia'; g.textAlign='center'; g.textBaseline='middle';
+  for(let hour=1;hour<=12;hour++) {
+    const a=hour*Math.PI/6;
+    g.fillText(String(hour),384+Math.sin(a)*104,221-Math.cos(a)*104);
+  }
+  g.strokeStyle='#372c20'; g.lineWidth=6; g.beginPath();
+  g.moveTo(417,215); g.lineTo(384,221); g.lineTo(340,242); g.stroke();
+  disk(384,221,6,'#332820');
+  g.fillStyle='#392e26'; g.fillRect(314,367,140,62);
+  g.fillStyle='#949489'; g.fillRect(327,378,114,38);
+  g.fillStyle='#343733'; g.font='25px monospace'; g.fillText('10  9',384,397);
+  g.strokeStyle='#40352a'; g.lineWidth=4; g.beginPath(); g.moveTo(384,428); g.lineTo(384,533); g.stroke();
+  disk(384,502,16,'#dddcd2');
+  g.beginPath(); g.moveTo(378,529); g.lineTo(390,529); g.lineTo(398,617); g.lineTo(370,617); g.closePath();
+  g.fillStyle='#302823'; g.fill();
+  clockArtwork = new three.CanvasTexture(canvas);
+  clockArtwork.colorSpace=three.SRGBColorSpace;
+  return clockArtwork;
+}
+
+function buildEntryClock(detail,view,group,wallLayers) {
+  const [ox,oy,w,d]=view;
+  const art=entryClockTexture();
+  const panel=new three.Mesh(new three.PlaneGeometry(detail.width/100,detail.height/100),
+    new three.MeshBasicMaterial({map:art,alphaTest:.15,toneMapped:false}));
+  const [, diningY, , diningDepth]=plan.rooms.dining.box;
+  const wall=wallLayers.find(({segment}) => segment.axis==='h' && segment.rooms.includes('dining') &&
+    segment.at===diningY+diningDepth && segment.from<=detail.centerX && segment.to>=detail.centerX);
+  const front=wall.segment.at-previewGeometry.wallThickness/2-2;
+  panel.position.set((detail.centerX-ox-w/2)/100,detail.centerHeight/100,(front-oy-d/2)/100);
+  panel.rotation.y=Math.PI;
+  group.add(panel);
+  // The clock belongs to its wall, so it follows that wall's cutaway state.
+  wall.upper.add(group);
+}
+
 const bedroomCabinetProfiles = {
   'studio-l': {
     facing:'east', desktop:'north', ceilingBand:.24,
@@ -786,7 +906,7 @@ async function build3() {
       }));
       const upper = new three.Group(), lower = new three.Group();
       model.add(upper,lower);
-      wallLayers.push({axis:wall.axis,side:sides.size === 1 ? [...sides][0] : 0,
+      wallLayers.push({segment:wall,axis:wall.axis,side:sides.size === 1 ? [...sides][0] : 0,
         plane:(wall.at-normalCenter)/100,upper,lower});
       const {wallHeight,wallThickness,cutHeight,doorTop,windowSill,windowTop,frameWidth} = previewGeometry;
       function strip(group,a,b,base,top,thickness,color,offset=0,opacity=1) {
@@ -838,6 +958,15 @@ async function build3() {
           }
         }
       }
+    }
+    for (const key of roomKeys()) {
+      const detail=sceneDetails[key];
+      if (!detail) continue;
+      const group=new three.Group();
+      group.name=detail.id;
+      model.add(group);
+      if (key==='living') buildLivingSofa(detail,plan.rooms[key].box,box,group);
+      else buildEntryClock(detail,viewBox(),group,wallLayers);
     }
     size3d();
     if (frameKey !== current) frame3d();
