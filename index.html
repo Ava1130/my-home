@@ -116,9 +116,40 @@ summary { cursor: pointer; font-weight: 600; border-radius: 6px; }
   .bar button, .view-tools summary { padding-inline: 6px; }
   .inspector { padding: 12px; }
 }
+/* Small, neutral chrome keeps attention on the plan. */
+.editor-version { color:#696969; font-size:10px; letter-spacing:.04em; }
+:root { --ink:#242424; --muted:#606060; --line:#e7e7e7; --surface:#f5f5f5; }
+.room, .room[data-room] { fill:#f3f3f3; }
+.room.active, .room[data-room]:hover { fill:#efefef; }
+.roomname { font-size:18px; fill:#393939; }
+.area { font-size:13px; fill:#656565; }
+.furniture.selected rect { stroke-width:1.5; }
+.live-measure-readout span { color:#515151; }
+.measurement .measure-line, .wall-measure .measure-line { stroke:#6c6c6c; stroke-width:1; stroke-dasharray:4 3; vector-effect:non-scaling-stroke; }
+.measurement .measure-dot { fill:#6c6c6c; r:2; }
+.measurement .measure-label, .wall-measure .measure-label { fill:#3d3d3d; font-size:12px; font-weight:600; stroke-width:2.2; }
+.inspector-heading { margin-bottom:9px; }
+.inspector .field-label { margin-top:10px; }
+.inline-color { margin:8px 0; }
+@media (min-width: 921px) {
+  .layout { grid-template-columns:224px minmax(0,1fr) 0px;
+             grid-template-areas:"library canvas inspector"; transition:grid-template-columns 160ms ease-out; }
+  .layout.has-selection { grid-template-columns:224px minmax(0,1fr) 254px; }
+  @media (prefers-reduced-motion: reduce) { .layout { transition:none; } }
+}
+@media (max-width: 620px) {
+  .library > section:first-child { display:flex; align-items:center; gap:8px; }
+  .library > section:first-child label { margin:0; }
+  .library > section:first-child select { min-width:0; }
+  .furniture-library #add { width:auto; padding-inline:8px; margin:0; }
+  .furniture-library #placedFurniture { margin-top:6px; }
+  .layout,.layout.has-selection { grid-template-rows:auto minmax(420px,59dvh) auto; }
+  .view { height:auto; min-height:0; }
+  .stage { grid-template-rows:auto minmax(0,1fr) auto; }
+}
 </style></head><body>
 <header class="app-header">
-  <div class="brand"><span class="brand-mark" aria-hidden="true">⌂</span><strong>MY HOME</strong></div>
+  <div class="brand"><span class="brand-mark" aria-hidden="true">⌂</span><strong>MY HOME</strong><span class="editor-version">V5.0</span></div>
   <div id="workspaceContext" class="workspace-context">全屋户型</div>
   <div class="history-actions"><button id="undo" title="Ctrl / ⌘ + Z">撤销</button><button id="redo" title="Ctrl / ⌘ + Shift + Z">重做</button></div>
   <div class="save-actions"><span id="saveStatus" class="dim" role="status"></span><button id="save">保存</button></div>
@@ -142,7 +173,7 @@ summary { cursor: pointer; font-weight: 600; border-radius: 6px; }
     <div class="bar" aria-label="画布工具">
       <div class="view-switch" role="group" aria-label="视图"><button id="b2" class="active">2D 平面</button><button id="b3">3D 示意</button></div>
       <div id="zoomTools" class="zoom-tools" role="group" aria-label="平面缩放"><button id="zoomout" title="缩小 2D 平面图" aria-label="缩小平面图">−</button><span id="zoomvalue" class="dim" aria-live="polite">100%</span><button id="zoomin" title="放大 2D 平面图" aria-label="放大平面图">＋</button></div>
-      <button id="homeview">重置视角</button>
+      <button id="homeview" aria-label="重置视角" title="恢复默认视角或平面缩放">重置</button>
       <details id="viewTools" class="view-tools"><summary>视图选项</summary><div class="tools-menu"><label id="measureModeLabel" class="measure-mode-label" for="measureMode">距离显示 <select id="measureMode" aria-label="距离标注类型"><option value="all">全部</option><option value="furniture">家具之间</option><option value="walls">四侧墙距</option><option value="none">关闭</option></select></label><select id="walls" hidden aria-label="3D 墙体显示"><option value="auto">自动剖切</option><option value="full">完整墙体</option><option value="low">低墙剖切</option></select><button id="kitchenfront" hidden>厨房门正视</button><select id="kitchenslide" hidden aria-label="厨房门滑动示意"><option value="0">向左 · 实拍状态</option><option value="0.5">居中 · 示意</option><option value="1">向右 · 示意</option></select></div></details>
     </div>
     <div class="view">
@@ -352,11 +383,18 @@ let current = 'all', selected = null, mode = '2';
 let deferSceneRefresh=false;
 let renderer, scene, camera, controls, model, loading3d, three, frameKey;
 let planZoom=1;
+const planZoomByRoom=new Map();
+const cameraByRoom=new Map();
+let autoFrame;
 let measureMode='none';
 $('measureMode').value=measureMode;
 const compareByRoom=new Map();
 const zoomClamp = value => Math.max(.5,Math.min(3,Math.round(value*10)/10));
-function setPlanZoom(value) { planZoom=zoomClamp(value); if(mode==='2') draw(); }
+function setPlanZoom(value) {
+  planZoom=zoomClamp(value);
+  planZoomByRoom.set(current,planZoom);
+  if (mode==='2') draw();
+}
 function updateZoomControls(){
   const is2d=mode==='2';
   for(const id of ['zoomout','zoomin','zoomvalue']) $(id).hidden=!is2d;
@@ -409,11 +447,12 @@ function commitEdit(key,before) {
   save();
 }
 
-function applyEdit(change) {
+function applyEdit(change,message) {
   const before=snapshot(current);
   change();
   commitEdit(current,before);
   sync();
+  if (message) $('status').textContent=message;
 }
 
 function navigateHistory(direction) {
@@ -425,6 +464,7 @@ function navigateHistory(direction) {
   selected=next.selected;
   save();
   sync();
+  $('status').textContent=direction==='undo' ? '已撤销上一步' : '已重做上一步';
 }
 
 function setPosition(item,key,x,y) {
@@ -782,7 +822,7 @@ function dragFurniture(event, el) {
   const [ox,oy]=plan.rooms[key].box;
   const local=e=>new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse());
   const start=local(event), originalX=f.x, originalY=f.y;
-  let nextX=originalX, nextY=originalY, moved=false;
+  let nextX=originalX, nextY=originalY, moved=false, pendingEvent, nextFrame;
   svg.querySelector('.furniture.selected')?.classList.remove('selected');
   el.classList.add('selected');
   if(document.activeElement instanceof HTMLElement && document.activeElement.matches('input,textarea,select')) document.activeElement.blur();
@@ -791,8 +831,8 @@ function dragFurniture(event, el) {
   if(liveDimensions) liveDimensions.innerHTML=dimensionOverlay(key,f);
   updateMeasureReadout(key,f);
   el.setPointerCapture(event.pointerId);
-  el.onpointermove=e=>{
-    if (e.pointerId!==event.pointerId || (!moved && Math.hypot(e.clientX-event.clientX,e.clientY-event.clientY)<3)) return;
+  const obstacles=roomObstacles(key,f.id);
+  function updateDrag(e) {
     moved=true;
     const pos=local(e), next={w:f.w,d:f.d};
     const snapped=snapPosition(next,key,originalX+pos.x-start.x,originalY+pos.y-start.y);
@@ -801,11 +841,23 @@ function dragFurniture(event, el) {
     el.setAttribute('transform',`translate(${ox+nextX} ${oy+nextY})`);
     if(liveDimensions) liveDimensions.innerHTML=dimensionOverlay(key,{...f,x:nextX,y:nextY});
     updateMeasureReadout(key,{...f,x:nextX,y:nextY});
-    const previewConflict=roomObstacles(key,f.id).some(other=>Math.min(nextX+f.w,other.x+other.w)-Math.max(nextX,other.x)>0.5 && Math.min(nextY+f.d,other.y+other.d)-Math.max(nextY,other.y)>0.5);
+    const previewConflict=obstacles.some(other=>Math.min(nextX+f.w,other.x+other.w)-Math.max(nextX,other.x)>0.5 && Math.min(nextY+f.d,other.y+other.d)-Math.max(nextY,other.y)>0.5);
     $('status').textContent=`${f.n} · X ${nextX.toFixed(1)} cm / Y ${nextY.toFixed(1)} cm${snapped.labels.length ? ' · 吸附：'+snapped.labels.join('、') : ''}${previewConflict ? ' · ⚠ 家具占地重叠' : ''}`;
+  }
+  el.onpointermove=e=>{
+    if (e.pointerId!==event.pointerId || (!moved && Math.hypot(e.clientX-event.clientX,e.clientY-event.clientY)<3)) return;
+    pendingEvent=e;
+    if (!nextFrame) nextFrame=requestAnimationFrame(()=>{
+      nextFrame=null;
+      const latest=pendingEvent;
+      pendingEvent=null;
+      if (latest) updateDrag(latest);
+    });
   };
   function finish(e) {
     if (e.pointerId!==event.pointerId) return;
+    if (nextFrame) cancelAnimationFrame(nextFrame);
+    if (e.type==='pointerup' && pendingEvent) updateDrag(pendingEvent);
     el.onpointermove=el.onpointerup=el.onpointercancel=el.onlostpointercapture=null;
     if (e.type==='pointerup') {
       if (moved) {
@@ -820,15 +872,16 @@ function dragFurniture(event, el) {
   el.onpointerup=el.onpointercancel=el.onlostpointercapture=finish;
 }
 
-function selectRoom(key, id = null) {
-  if(current!==key) planZoom=1;
+function selectRoom(key, id = null, refreshGeometry = false) {
+  const sameRoom=current===key;
+  if (!sameRoom) planZoom=planZoomByRoom.get(key) ?? 1;
   current = key;
   selected = id;
   $('room').value = key;
-  sync();
+  sync(sameRoom && !refreshGeometry);
 }
 
-function sync() {
+function sync(selectionOnly=false) {
   const room = plan.rooms[current], f = selectedItem(), layout=data.rooms[current];
   $('workspace').classList.toggle('has-selection',Boolean(f));
   $('inspector').hidden=!f;
@@ -894,7 +947,10 @@ function sync() {
   $('distanceInfo').textContent=nearest ? `最近物件：${nearest.name}（${nearest.kind==='fixed'?'固定柜':'活动家具'}） · ${nearest.gap.toFixed(1)} cm。${nearestFixed ? '最近固定柜：'+nearestFixed.name+' · '+nearestFixed.gap.toFixed(1)+' cm。' : ''}仅为平面矩形投影距离，不代表通道净宽。` : '';
   $('nudgeStatus').textContent=f ? `当前位置 X ${f.x.toFixed(1)} cm · Y ${f.y.toFixed(1)} cm` : '';
   if (mode === '2') draw();
-  else if (!deferSceneRefresh) build3();
+  else if (selectionOnly && model && frameKey===current) {
+    updateFurnitureHighlight();
+    size3d();
+  } else if (!deferSceneRefresh) build3();
 }
 
 function setMode(next) {
@@ -946,6 +1002,7 @@ function bind3dFurnitureSelection(canvas,THREE) {
       return;
     }
     e.preventDefault();
+    const refreshGeometry=document.activeElement?.matches('input,textarea,[contenteditable]');
     deferSceneRefresh=true;
     try { commitFocusedField(); }
     finally { deferSceneRefresh=false; }
@@ -953,7 +1010,7 @@ function bind3dFurnitureSelection(canvas,THREE) {
     const item=furniture(room).find(f=>f.id===id), start=pointOnFloor();
     if (!item || !start) return;
     drag={id:e.pointerId,room,item,group,start,screenX:e.clientX,screenY:e.clientY,
-      x:item.x,y:item.y,before:snapshot(room),wasEnabled:controls.enabled};
+      x:item.x,y:item.y,before:snapshot(room),wasEnabled:controls.enabled,refreshGeometry};
     controls.enabled=false;
     canvas.setPointerCapture(e.pointerId);
     canvas.style.cursor='grabbing';
@@ -1002,7 +1059,7 @@ function bind3dFurnitureSelection(canvas,THREE) {
       action.item.x=action.x; action.item.y=action.y;
       commitEdit(action.room,action.before);
     }
-    selectRoom(action.room,action.item.id);
+    selectRoom(action.room,action.item.id,action.moved || action.refreshGeometry);
     $('status').textContent=action.moved ? '已移动 '+action.item.n+' · 可撤销' : '已选中 '+action.item.n;
   }
   canvas.addEventListener('pointerup',finish);
@@ -1047,13 +1104,31 @@ async function initialize3d() {
   });
 }
 
+function updateFurnitureHighlight() {
+  for (const group of model.children) {
+    const item=group.userData.furniture;
+    if (!item) continue;
+    const active=item.room===current && item.id===selected;
+    for (const mesh of group.children) {
+      mesh.material.emissive.set('#752e24');
+      mesh.material.emissiveIntensity=active ? .24 : 0;
+    }
+  }
+}
+
 function size3d() {
   if (!renderer || mode !== '3') return;
   const {clientWidth:w,clientHeight:h} = $('three');
   if (!w || !h) return;
+  const canvas=renderer.domElement;
+  const ratio=renderer.getPixelRatio();
+  if (canvas.width===Math.floor(w*ratio) && canvas.height===Math.floor(h*ratio) && camera.aspect===w/h) return;
+  const keepFit=autoFrame?.key===current && camera.position.distanceToSquared(autoFrame.eye)<1e-6
+    && controls.target.distanceToSquared(autoFrame.target)<1e-6;
   renderer.setSize(w,h);
   camera.aspect = w/h;
   camera.updateProjectionMatrix();
+  if (keepFit) frame3d();
 }
 
 // Display assumptions in centimetres. The 2D footprints and measured notes
@@ -1077,17 +1152,45 @@ function updateWallVisibility() {
 }
 
 function frame3d() {
-  const [, , w,h] = viewBox();
-  const targetHeight = .6;
-  const radius = Math.hypot(w/200, h/200, previewGeometry.wallHeight/100-targetHeight);
-  const vertical = three.MathUtils.degToRad(camera.fov/2);
-  const halfAngle = Math.min(vertical, Math.atan(Math.tan(vertical)*camera.aspect));
-  const distance = radius / Math.sin(halfAngle) * 1.06;
-  controls.target.set(0,targetHeight,0);
-  controls.maxDistance = Math.max(70, distance*2);
-  camera.position.set(.82,1.02,['all','dining'].includes(current) ? -1 : 1).normalize().multiplyScalar(distance).add(controls.target);
+  const [, , w,d]=viewBox();
+  const target=new three.Vector3(0,current==='all' ? .75 : 1.10,0);
+  const direction=new three.Vector3(.82,1.14,['all','dining'].includes(current) ? -1 : 1).normalize();
+  const right=new three.Vector3().crossVectors(camera.up,direction).normalize();
+  const up=new three.Vector3().crossVectors(direction,right);
+  const tangent=Math.tan(three.MathUtils.degToRad(camera.fov/2))*.88;
+  let distance=0;
+  for (const x of [-w/200-.10,w/200+.10]) {
+    for (const z of [-d/200-.10,d/200+.10]) {
+      for (const y of [0,previewGeometry.wallHeight/100]) {
+        const corner=new three.Vector3(x,y,z).sub(target);
+        const fit=Math.max(Math.abs(corner.dot(right))/(tangent*camera.aspect),Math.abs(corner.dot(up))/tangent);
+        distance=Math.max(distance,corner.dot(direction)+fit);
+      }
+    }
+  }
+  controls.target.copy(target);
+  controls.maxDistance=Math.max(70,distance*2);
+  camera.position.copy(direction).multiplyScalar(distance).add(target);
   controls.update();
-  frameKey = current;
+  frameKey=current;
+  autoFrame={key:current,eye:camera.position.clone(),target:controls.target.clone()};
+}
+
+function restoreRoomCamera() {
+  if (frameKey===current) return;
+  if (frameKey) cameraByRoom.set(frameKey,{eye:camera.position.clone(),target:controls.target.clone(),
+    auto:autoFrame?.key===frameKey && camera.position.distanceToSquared(autoFrame.eye)<1e-6
+      && controls.target.distanceToSquared(autoFrame.target)<1e-6});
+  const previous=cameraByRoom.get(current);
+  if (!previous || previous.auto) {
+    frame3d();
+    return;
+  }
+  autoFrame=null;
+  camera.position.copy(previous.eye);
+  controls.target.copy(previous.target);
+  controls.update();
+  frameKey=current;
 }
 
 // Cabinet faces are laid out in local width/depth coordinates, then turned
@@ -1632,12 +1735,7 @@ async function build3() {
         else if (f.model === 'photo-studio-sofa') buildStudioSofa(f,[x,y],box,group);
         else if (f.model === 'photo-studio-mirror') buildStudioMirror(f,[x,y],box,group);
         else box(x+f.x,y+f.y,f.w,f.d,f.h,f.c,0,1,group);
-        if (current===key && selected===f.id) {
-          for (const mesh of group.children) {
-            mesh.material.emissive.set('#792f22');
-            mesh.material.emissiveIntensity=.38;
-          }
-        }
+
       }
       for (const asset of plan.fixed.filter(a => a.room === key)) {
         if (asset.cabinet) {
@@ -1739,7 +1837,8 @@ async function build3() {
       buildEntryClock(detail,viewBox(),group,wallLayers);
     }
     size3d();
-    if (frameKey !== current) frame3d();
+    restoreRoomCamera();
+    updateFurnitureHighlight();
     updateWallVisibility();
     $('status').textContent = '3D 示意已加载';
   } catch {
@@ -1751,7 +1850,11 @@ async function build3() {
 $('room').replaceChildren(new Option('全屋户型','all'),...Object.entries(plan.rooms).map(([key,r]) => new Option(label(r),key)));
 $('room').onchange = e => selectRoom(e.target.value);
 $('saveStatus').textContent='自动保存到本机';
-$('items').onchange = e => { selected = furniture(current).find(f => String(f.id) === e.target.value)?.id ?? null; e.target.blur(); sync(); };
+$('items').onchange = e => {
+  const item=furniture(current).find(f=>String(f.id)===e.target.value);
+  e.target.blur();
+  selectRoom(current,item?.id ?? null);
+};
 for (const [id,key] of Object.entries({name:'n',fw:'w',fd:'d',fh:'h',fx:'x',fy:'y',color:'c'})) {
   $(id).onchange = e => {
     const f=selectedItem();
@@ -1774,7 +1877,7 @@ for (const [id,key] of Object.entries({name:'n',fw:'w',fd:'d',fh:'h',fx:'x',fy:'
     applyEdit(()=>{
       f[key]=Math.round(value*10)/10;
       if (key==='w' || key==='d') setPosition(f,current,f.x,f.y);
-    });
+    },key==='x' || key==='y' ? '已更新位置 · 可撤销' : '已更新尺寸 · 可撤销');
   };
 }
 function saveSchemeNotes() {
@@ -1886,7 +1989,7 @@ $('rotate').onclick = () => {
     [f.w,f.d]=[f.d,f.w];
     if (f.model?.startsWith('photo-')) f.turns=((f.turns || 0)+1)%4;
     setPosition(f,current,f.x,f.y);
-  });
+  },'已旋转 90° · 可撤销');
 };
 function removeSelectedFurniture() {
   const item=selectedItem();
