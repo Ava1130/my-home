@@ -142,11 +142,11 @@ const referenceLivingSofa = {id:'living-photo-sofa',model:'photo-sofa',n:'客厅
   x:163,y:7,w:223,d:82,h:91,c:'#67412e',turns:0};
 const studioReferences = {
   addStudioSofa:{id:'studio-sofa-bed',model:'photo-studio-sofa',n:'实拍沙发床 · 收起',
-    x:312,y:23,w:89,d:209,h:88,c:'#d8cabc',turns:1},
+    x:312,y:23,w:89,d:200,h:88,c:'#d8cabc',turns:1},
   addStudioMirror:{id:'studio-floor-mirror',model:'photo-studio-mirror',n:'实拍带轮落地镜',
     x:82,y:12,w:70,d:45,h:176,c:'#b7ced5',turns:0}
 };
-const defaults = {bed:[referenceBed],living:[referenceLivingSofa]};
+const defaults = {bed:[referenceBed],living:[referenceLivingSofa],studio:[studioReferences.addStudioSofa,studioReferences.addStudioMirror]};
 const storageKey = 'myhome-v41';
 const slots = ['A','B','C'];
 
@@ -688,7 +688,7 @@ function sync() {
   if (f?.model==='photo-studio-sofa' || f?.model==='photo-studio-mirror') {
     const note=document.createElement('p');
     note.textContent=f.model==='photo-studio-sofa'
-      ? '沙发床：实拍收起状态；占地、离墙距离和高度暂定，展开尺寸待实测。'
+      ? '沙发床：依据新实拍，深色木框、三段米色靠背及三只靠枕；宽约 200 cm（用户估计），收起进深与高度暂定，展开尺寸待实测。'
       : '落地镜：按照片文件名的 176×70 cm 作高×宽参考；底座深度、朝向和摆位暂定。';
     $('roomdims').append(note);
   }
@@ -1089,7 +1089,7 @@ function studioFurnitureParts(f,[x,y],box,group) {
 
 function buildStudioSofa(f,origin,box,group) {
   const {width:w,depth:d,height:h,part,profile}=studioFurnitureParts(f,origin,box,group);
-  const wood='#433128', beam='#54392e', cushion=f.c;
+  const wood='#382921', beam='#4b3328', cushion='#d8cec2';
   const arm=w*.055, section=(w-2*arm)/3;
   part(arm,d*.08,w-2*arm,d*.87,h*.13,h*.39,beam);
   part(arm,0,w-2*arm,d*.13,h*.34,h*.79,wood);
@@ -1107,7 +1107,7 @@ function buildStudioSofa(f,origin,box,group) {
 
 function buildStudioMirror(f,origin,box,group) {
   const {width:w,depth:d,height:h,part,profile,angle}=studioFurnitureParts(f,origin,box,group);
-  const metal='#b9bebf', radius=Math.min(w*.019,d*.055,h*.018);
+  const metal='#b8bfc1', radius=Math.min(w*.019,d*.055,h*.018);
   const edge=w*.075, footY=radius*3.5, paneY=h*.10, faceDepth=d*.53;
   function tube(u,v,width,deep,bottom,top,axis) {
     const mesh=part(u,v,width,deep,bottom,top,metal);
